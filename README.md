@@ -1,14 +1,18 @@
 # Teletubbies Bot
 
-# Configuration
+## Configuration
 
 Create .env file with following value:
 ```
-DISCORD_TOKEN="my_bot_token"
-SMMO_TOKEN="my_api_token"
+DISCORD_ACTIVITY = "text on the bot while on"
+DATABASE_URI = "database-uri"
+DISCORD_TOKEN = "discord-token"
+SMMO_TOKEN = "smmo-token"
 ```
 
-# Installation & running
+Configure custom reward or requirements in `config.ini`
+
+## Installation & running
 
 ### MacOS / Linux
 `python -m venv .venv`
