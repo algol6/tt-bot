@@ -9,6 +9,8 @@ from bot.db.models import GameStats, User
 from bot.api import SMMOApi
 from datetime import time, datetime, timezone, timedelta
 
+from bot.discord.modules.tt._lb_view import LeaderBoardView
+
 class TT(commands.Cog):
     def __init__(self, client) -> None:
         self.client = client
@@ -123,7 +125,9 @@ class TT(commands.Cog):
     @discord.guild_only()
     async def register(self, ctx: ApplicationContext, smmo_id: int) -> None:
         game_user = await SMMOApi.get_player_info(smmo_id)
-
+        db_user = await Database.select_one(Collection.USER.value,{"smmo_id":smmo_id})
+        if db_user is not None:
+            return await ctx.followup.send(content="SMMO ID already registered")
         if game_user is None:
             return await ctx.followup.send(content="SMMO ID not found")
         db_user = {"ign":game_user.name,
@@ -141,5 +145,23 @@ class TT(commands.Cog):
         if game_user.guild.id is None or game_user.guild.id != int(self.config["DEFAULT"]["guild_id"]):
             return await ctx.followup.send(content=f"User '{game_user.name}' Added, but not found in the guild so the system won't work")
         await ctx.followup.send(content=f"User '{game_user.name}' Added")
+
+    @subcommand("tt")
+    @slash_command(description="Show TT leaderboard")
+    @command_utils.auto_defer(False)
+    @discord.guild_only()
+    async def lb(self, ctx: ApplicationContext, more_info:bool = False) -> None:
+        users = await Database.select(Collection.USER.value)
+        view = LeaderBoardView()
+
+        view.users = sorted(users, key=lambda item: item["ett"]+item["btt"],reverse=True)
+        view.more_info = more_info
+        view.color = int(self.config["DEFAULT"]["color"],16)
+
+        await view.send(ctx)
+
+
+
+
 def setup(client: discord.Bot):
     client.add_cog(TT(client))
