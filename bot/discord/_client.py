@@ -9,13 +9,13 @@ client.load_extension("bot.discord.modules.command_groups")
 client.load_extension("bot.discord.modules.admin")
 client.load_extension("bot.discord.modules.tt")
 
-# @client.event
-# async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
-#     await ctx.respond("Unexpected error. Try again later.")
-#     from datetime import datetime
-#     if ctx.guild is not None:
-#         print(f"[{datetime.now()}]ERROR from: #{ctx.channel.name}")
-#     print(error)
+@client.event
+async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.DiscordException):
+    await ctx.respond("Unexpected error. Try again later.")
+    from datetime import datetime
+    if ctx.guild is not None:
+        print(f"[{datetime.now()}]ERROR from: #{ctx.channel.name}")
+    print(error)
 
 
 def run() -> None:
