@@ -159,13 +159,12 @@ class Admin(commands.Cog):
                     await Database.update_one_user_reward_status(tmp_u,"monthly",False)
 
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(minutes=5)
     async def check_stats(self):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
         cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
         cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
-        print(cnf2)
         for member in guild_member:
             user = await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})
             if user is None:
