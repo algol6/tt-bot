@@ -95,10 +95,14 @@ class Admin(commands.Cog):
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    @discord.option(name="type", choices=["NPC","STEPS","BOTH"])
     @discord.option(name="multipler", description="multiply the gains by x times")
-    async def start_event(self, ctx: ApplicationContext, multipler: int, type:str="BOTH") -> None:
-        return await ctx.followup.send(content="Not Implemented. yet.")
+    async def start_event(self, ctx: ApplicationContext, multipler: int) -> None:
+        cfn = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        if cfn is not None and cfn["mult"] != 1:
+            return await ctx.followup.send("Event already on.")
+        cfn["mult"] = multipler
+        await Database.update_one(Collection.CONFIG.value,cfn,cfn)
+        await ctx.followup.send("Done")
 
 
     @subcommand("admin")
@@ -106,9 +110,13 @@ class Admin(commands.Cog):
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    @discord.option(name="type", choices=["NPC","STEPS","BOTH"])
-    async def end_event(self, ctx: ApplicationContext, multipler: int, type:str="BOTH") -> None:
-        return await ctx.followup.send(content="Not Implemented. yet.")
+    async def end_event(self, ctx: ApplicationContext, multipler: int) -> None:
+        cfn = await Database.select_one(Collection.CONFIG.value,{"mult":multipler})
+        if cfn is None:
+            return await ctx.followup.send("No Events on.")
+        cfn["mult"] = 1
+        await Database.update_one(Collection.CONFIG.value,cfn,cfn)
+        await ctx.followup.send("Done")
 
     @subcommand("admin")
     @slash_command(description="Select notification channel")
@@ -126,6 +134,7 @@ class Admin(commands.Cog):
             return await ctx.followup.send(content="Bot doesn't have the perms to see/write the channel.")
         
         await Database.insert_one(Collection.CONFIG.value, {"channel_id":channel.id})
+        await Database.insert_one(Collection.CONFIG.value, {"mult":1})
         await ctx.followup.send("Done")
         
     
@@ -134,9 +143,10 @@ class Admin(commands.Cog):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
 
         date = command_utils.get_in_game_day()
-        
+
         await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day} for member in guild_member])
-        users = await Database.select(Collection.USER)
+
+        users = await Database.select(Collection.USER.value)
         for member in guild_member:
             for user in users:
                 if user["smmo_id"] != member.user_id:
@@ -153,7 +163,9 @@ class Admin(commands.Cog):
     async def check_stats(self):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
-        cnf = await Database.select_one(Collection.CONFIG.value,{})
+        cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
+        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        print(cnf2)
         for member in guild_member:
             user = await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})
             if user is None:
@@ -168,13 +180,13 @@ class Admin(commands.Cog):
                                     or (int(self.config["REQUIREMENTS"]["daily_npc"]) != 0 and member.npc_kills - daily_stats.npc >= int(self.config["REQUIREMENTS"]["daily_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["daily_pvp"]) != 0 and member.user_kills - daily_stats.pvp >= int(self.config["REQUIREMENTS"]["daily_pvp"]))):
                 user.daily = True
-                user.ett += int(self.config["REWARDS"]["daily_reward"])
+                user.ett += int(self.config["REWARDS"]["daily_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
                 if cnf is not None:
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Daily Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["daily_reward"]} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["daily_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
@@ -190,13 +202,13 @@ class Admin(commands.Cog):
                                     or (int(self.config["REQUIREMENTS"]["weekly_npc"]) != 0 and member.npc_kills - weekly_stats.npc >= int(self.config["REQUIREMENTS"]["weekly_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["weekly_pvp"]) != 0 and member.user_kills - weekly_stats.pvp >= int(self.config["REQUIREMENTS"]["weekly_pvp"]))):
                 user.weekly = True
-                user.ett += int(self.config["REWARDS"]["weekly_reward"])
+                user.ett += int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
                 if cnf is not None:
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Weekly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["weekly_reward"]} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["weekly_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
@@ -211,14 +223,14 @@ class Admin(commands.Cog):
                                      or (int(self.config["REQUIREMENTS"]["monthly_npc"]) != 0 and member.npc_kills - monthly_stats.npc >= int(self.config["REQUIREMENTS"]["monthly_npc"]))
                                      or (int(self.config["REQUIREMENTS"]["monthly_pvp"]) != 0 and member.user_kills - monthly_stats.pvp >= int(self.config["REQUIREMENTS"]["monthly_pvp"]))):
                 user.monthly = True
-                user.ett += int(self.config["REWARDS"]["monthly_reward"])
+                user.ett += int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
                 
                 if cnf is not None:
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Monthly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["monthly_reward"]} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["monthly_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
@@ -230,6 +242,8 @@ class Admin(commands.Cog):
         # get guild member
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
+        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult"})
+
         lbs_npc = [[],[],[]]
         lbs_stp = [[],[],[]]
         lbs_pvp = [[],[],[]]
@@ -293,15 +307,15 @@ class Admin(commands.Cog):
         names = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
         for i in range(3):
             for us,rew in zip(lbs_npc[i],self.config[names[i]]):
-                us["user"].ett += rew
+                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
 
             for us,rew in zip(lbs_stp[i],self.config[names[i]]):
-                us["user"].ett += rew
+                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
 
             for us,rew in zip(lbs_pvp[i],self.config[names[i]]):
-                us["user"].ett += rew
+                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
 
 def setup(client: discord.Bot):
