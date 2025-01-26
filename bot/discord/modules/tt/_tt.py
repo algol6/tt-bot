@@ -119,19 +119,23 @@ class TT(commands.Cog):
 
         await ctx.followup.send(embed=emb)
         
-    @subcommand("tt")
+    @subcommand("admin")
     @slash_command(description="Register a user into TT system")
     @command_utils.auto_defer()
     @discord.guild_only()
-    async def register(self, ctx: ApplicationContext, smmo_id: int) -> None:
+    @permissions.require_admin_or_staff()
+    async def register(self, ctx: ApplicationContext, user: discord.User, smmo_id: int) -> None:
         game_user = await SMMOApi.get_player_info(smmo_id)
         db_user = await Database.select_one(Collection.USER.value,{"smmo_id":smmo_id})
+        db_user2 = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
+        if db_user2 is not None:
+            return await ctx.followup.send(content="User already registered")
         if db_user is not None:
             return await ctx.followup.send(content="SMMO ID already registered")
         if game_user is None:
             return await ctx.followup.send(content="SMMO ID not found")
         db_user = {"ign":game_user.name,
-                   "discord_id": ctx.user.id,
+                   "discord_id": user.id,
                    "smmo_id": game_user.id,
                    "ett": 0,
                    "btt": 0,
