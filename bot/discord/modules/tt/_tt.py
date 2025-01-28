@@ -92,10 +92,10 @@ class TT(commands.Cog):
         
         m_date = date
         if date.day > 28:
-            m_date = m_date.replace(day=29)
+            m_date = m_date.replace(day=28)
         else:
             m_date -= timedelta(weeks=4)
-            m_date = m_date.replace(day=29)
+            m_date = m_date.replace(day=28)
 
         monthly = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":m_date.year,"month":m_date.month,"day":m_date.day})
 
