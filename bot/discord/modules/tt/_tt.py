@@ -91,7 +91,7 @@ class TT(commands.Cog):
         emb.add_field(name="Weekly",value=msg,inline=False)
         
         m_date = date
-        if date.day > 28:
+        if date.day > 28 or (date.day == 28 and date.hour >= 12):
             m_date = m_date.replace(day=28)
         else:
             m_date -= timedelta(weeks=4)
