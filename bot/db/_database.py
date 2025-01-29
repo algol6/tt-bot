@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 from os import getenv
+
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.server_api import ServerApi
 from enum import Enum
@@ -35,6 +36,36 @@ class Database:
     @staticmethod
     async def select_one(collection:str,obj:dict):
         db = await Database._get_db()
+        if collection == Collection.STATS.value:
+            obj = [
+                    {
+                        '$match': {
+                            'smmo_id': obj["smmo_id"], 
+                            'year': {
+                                '$gte': obj["year"]
+                            }, 
+                            'month': {
+                                '$gte': obj["month"]
+                            }, 
+                            'day': {
+                                '$gte': obj["day"]
+                            }
+                        }
+                    }, {
+                        '$sort': {
+                            'year': 1, 
+                            'month': 1, 
+                            'day': 1
+                        }
+                    }, {
+                        '$limit': 1
+                    }
+                ]
+            aaaa =  await db[collection].aggregate(obj).to_list()
+            if len(aaaa) == 0:
+                return None
+            return aaaa[0]
+        
         return await db[collection].find_one(obj)
     
     @staticmethod
