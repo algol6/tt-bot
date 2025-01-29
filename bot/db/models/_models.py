@@ -26,6 +26,7 @@ class GameStats(MongoDbDataclass):
     year:int
     month:int
     day:int
+    time:int
     
 @dataclass
 class GameLbReward(MongoDbDataclass):
