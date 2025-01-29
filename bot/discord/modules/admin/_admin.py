@@ -140,7 +140,7 @@ class Admin(commands.Cog):
 
         date = command_utils.get_in_game_day()
 
-        await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day} for member in guild_member])
+        await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day, "time":date.timestamp()} for member in guild_member])
 
         users = await Database.select(Collection.USER.value)
         for member in guild_member:

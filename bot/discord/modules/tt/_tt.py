@@ -144,7 +144,7 @@ class TT(commands.Cog):
                    "monthly": False}
         await Database.insert_one(Collection.USER.value,db_user)
         date = command_utils.get_in_game_day()
-        await Database.insert_one(Collection.STATS.value,{"smmo_id": game_user.id,"steps": game_user.steps,"npc": game_user.npc_kills,"pvp": game_user.user_kills,"year": date.year,"month": date.month,"day": date.day})
+        await Database.insert_one(Collection.STATS.value,{"smmo_id": game_user.id,"steps": game_user.steps,"npc": game_user.npc_kills,"pvp": game_user.user_kills,"year": date.year,"month": date.month,"day": date.day,"time":date.timestamp()})
 
         if game_user.guild.id is None or game_user.guild.id != int(self.config["DEFAULT"]["guild_id"]):
             return await ctx.followup.send(content=f"User '{game_user.name}' Added, but not found in the guild so the system won't work")
