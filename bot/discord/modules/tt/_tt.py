@@ -41,10 +41,12 @@ class TT(commands.Cog):
     @slash_command(description="Show your progress")
     @command_utils.auto_defer(False)
     @discord.guild_only()
-    async def progress(self, ctx: ApplicationContext) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":ctx.user.id})
+    async def progress(self, ctx: ApplicationContext, user: discord.User = None) -> None:
+        if user is None:
+            user = ctx.user
+        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
         if tmp is None:
-            return await ctx.followup.send(content="You are not registered.")
+            return await ctx.followup.send(content="User not registered.")
         db_user = User(**tmp)
         gm_user = await SMMOApi.get_player_info(db_user.smmo_id)
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s progress", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
