@@ -123,10 +123,7 @@ class Admin(commands.Cog):
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel = None) -> None:
-        if channel is None:
-            channel = ctx.channel
-
+    async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel) -> None:
         try:
             ch = await self.client.fetch_channel(channel.id)
             await ch.send(content="test message.", delete_after=1)
@@ -136,7 +133,6 @@ class Admin(commands.Cog):
         await Database.insert_one(Collection.CONFIG.value, {"channel_id":channel.id})
         await Database.insert_one(Collection.CONFIG.value, {"mult":1})
         await ctx.followup.send("Done")
-        
     
     @tasks.loop(time=time(hour=12))
     async def save_stats(self):
@@ -169,23 +165,23 @@ class Admin(commands.Cog):
             user = await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})
             if user is None:
                 continue
+
             user = User(**user)
             daily_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})
             if daily_stats is None:
                 continue
             daily_stats = GameStats(**daily_stats)
-            
             if not user.daily and ((int(self.config["REQUIREMENTS"]["daily_steps"]) != 0 and member.steps - daily_stats.steps >= int(self.config["REQUIREMENTS"]["daily_steps"]))
                                     or (int(self.config["REQUIREMENTS"]["daily_npc"]) != 0 and member.npc_kills - daily_stats.npc >= int(self.config["REQUIREMENTS"]["daily_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["daily_pvp"]) != 0 and member.user_kills - daily_stats.pvp >= int(self.config["REQUIREMENTS"]["daily_pvp"]))):
                 user.daily = True
-                user.ett += int(self.config["REWARDS"]["daily_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
+                user.ett += int(self.config["REWARDS"]["daily_reward"]) * (int(cnf2["mult"]) if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
                 if cnf is not None:
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Daily Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["daily_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["daily_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
@@ -196,7 +192,8 @@ class Admin(commands.Cog):
             weekly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
             if weekly_stats is None:
                 continue
-            
+            weekly_stats = GameStats(**weekly_stats)
+
             if not user.weekly and ((int(self.config["REQUIREMENTS"]["weekly_steps"]) != 0 and member.steps - weekly_stats.steps >= int(self.config["REQUIREMENTS"]["weekly_steps"]))
                                     or (int(self.config["REQUIREMENTS"]["weekly_npc"]) != 0 and member.npc_kills - weekly_stats.npc >= int(self.config["REQUIREMENTS"]["weekly_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["weekly_pvp"]) != 0 and member.user_kills - weekly_stats.pvp >= int(self.config["REQUIREMENTS"]["weekly_pvp"]))):
@@ -207,7 +204,7 @@ class Admin(commands.Cog):
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Weekly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["weekly_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
@@ -217,7 +214,7 @@ class Admin(commands.Cog):
             monthly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
             if monthly_stats is None:
                 continue
-
+            monthly_stats = GameStats(**monthly_stats)
             if not user.monthly and ((int(self.config["REQUIREMENTS"]["monthly_steps"]) != 0 and member.steps - monthly_stats.steps >= int(self.config["REQUIREMENTS"]["monthly_steps"]))
                                      or (int(self.config["REQUIREMENTS"]["monthly_npc"]) != 0 and member.npc_kills - monthly_stats.npc >= int(self.config["REQUIREMENTS"]["monthly_npc"]))
                                      or (int(self.config["REQUIREMENTS"]["monthly_pvp"]) != 0 and member.user_kills - monthly_stats.pvp >= int(self.config["REQUIREMENTS"]["monthly_pvp"]))):
@@ -229,7 +226,7 @@ class Admin(commands.Cog):
                     try:
                         channel = await self.client.fetch_channel(cnf["channel_id"])
                         emb:discord.Embed = discord.Embed(title=f"Monthly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{self.config["REWARDS"]["monthly_reward"] * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
                         await channel.send(embed=emb)
                     except discord.errors.NotFound:
                         print("Channel not found.")
