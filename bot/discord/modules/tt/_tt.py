@@ -51,7 +51,7 @@ class TT(commands.Cog):
         date = command_utils.get_in_game_day()
         daily = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":date.year,"month":date.month,"day":date.day})
 
-        msg:str = ""
+        msg:str = ""    
         perc = 0
         if self.config["REQUIREMENTS"]["daily_steps"] != "0":
             msg += f"**Steps**: {0 if daily is None else gm_user.steps - daily["steps"]}/{self.config["REQUIREMENTS"]["daily_steps"]}\n"
@@ -143,8 +143,8 @@ class TT(commands.Cog):
                    "weekly": False,
                    "monthly": False}
         await Database.insert_one(Collection.USER.value,db_user)
-        # date = command_utils.get_in_game_day()
-        # await Database.insert_one(Collection.STATS.value,{"smmo_id": game_user.id   ,"steps": game_user.steps,"npc": game_user.npc_kills,"pvp": game_user.user_kills,"year": date.year,"month": date.month,"day": date.day})
+        date = command_utils.get_in_game_day()
+        await Database.insert_one(Collection.STATS.value,{"smmo_id": game_user.id,"steps": game_user.steps,"npc": game_user.npc_kills,"pvp": game_user.user_kills,"year": date.year,"month": date.month,"day": date.day})
 
         if game_user.guild.id is None or game_user.guild.id != int(self.config["DEFAULT"]["guild_id"]):
             return await ctx.followup.send(content=f"User '{game_user.name}' Added, but not found in the guild so the system won't work")
