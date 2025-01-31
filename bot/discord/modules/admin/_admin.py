@@ -155,7 +155,7 @@ class Admin(commands.Cog):
                     await Database.update_one_user_reward_status(tmp_u,"monthly",False)
 
 
-    @tasks.loop(minutes=30)
+    @tasks.loop(minutes=15)
     async def check_stats(self):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
