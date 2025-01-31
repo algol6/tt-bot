@@ -26,7 +26,7 @@ class GameStats(MongoDbDataclass):
     year:int
     month:int
     day:int
-    time:int
+    time:int = field(default_factory=None)
     
 @dataclass
 class GameLbReward(MongoDbDataclass):
