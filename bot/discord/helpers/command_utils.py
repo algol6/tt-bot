@@ -22,8 +22,4 @@ def get_config() -> list[str]:
 
 def get_in_game_day() -> datetime:
     da:datetime = datetime.now(tz=timezone.utc)
-    if da > da.replace(hour=12, minute=0, second=0, microsecond=0):
-        da = da.replace(hour=12, minute=0, second=0, microsecond=0)
-    else:
-        da = da.replace(hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
-    return da
+    return da.replace(hour=12, minute=0, second=0, microsecond=0) if da.hour >= 12 else da.replace(hour=12, minute=0, second=0, microsecond=0) - timedelta(days=1)
