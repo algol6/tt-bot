@@ -140,7 +140,7 @@ class Admin(commands.Cog):
 
         date = command_utils.get_in_game_day()
 
-        await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day, "time":date.timestamp()} for member in guild_member])
+        await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day, "time":int(date.timestamp())} for member in guild_member])
 
         users = await Database.select(Collection.USER.value)
         for member in guild_member:
@@ -158,80 +158,121 @@ class Admin(commands.Cog):
     @tasks.loop(minutes=15)
     async def check_stats(self):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
-        date = command_utils.get_in_game_day()
         cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
         cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
+        reward:list[str] = ["daily_reward","weekly_reward","monthly_reward"]
+        date = command_utils.get_in_game_day()
+        time:list[datetime] = [date,date - timedelta(days=1),date - timedelta(weeks=4)]
+
         for member in guild_member:
-            user = await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})
-            if user is None:
-                continue
-
-            user = User(**user)
             try:
-                daily_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})))
+                user = User(**(await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})))
             except TypeError:
                 continue
-            if not user.daily and ((int(self.config["REQUIREMENTS"]["daily_steps"]) != 0 and member.steps - daily_stats.steps >= int(self.config["REQUIREMENTS"]["daily_steps"]))
-                                    or (int(self.config["REQUIREMENTS"]["daily_npc"]) != 0 and member.npc_kills - daily_stats.npc >= int(self.config["REQUIREMENTS"]["daily_npc"]))
-                                    or (int(self.config["REQUIREMENTS"]["daily_pvp"]) != 0 and member.user_kills - daily_stats.pvp >= int(self.config["REQUIREMENTS"]["daily_pvp"]))):
-                user.daily = True
-                user.ett += int(self.config["REWARDS"]["daily_reward"]) * (int(cnf2["mult"]) if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
-                if cnf is not None:
-                    try:
-                        channel = await self.client.fetch_channel(cnf["channel_id"])
-                        emb:discord.Embed = discord.Embed(title=f"Daily Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["daily_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
-                        await channel.send(embed=emb)
-                    except discord.errors.NotFound:
-                        print("Channel not found.")
-                    except discord.errors.Forbidden:
-                        print("Can't see/write on the channel")
+            reward_got:list[bool] = [user.daily,user.weekly,user.weekly]
+            for i in range(3):
+                try:
+                    stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":time[i].year,"month":time[i].month,"day":time[i].day})))
+                except TypeError:
+                    continue
+                if not reward_got[i] and ((int(self.config["REQUIREMENTS"][reward_names[0][i]]) != 0 and member.steps - stats.steps >= int(self.config["REQUIREMENTS"][reward_names[0][i]]))
+                                        or (int(self.config["REQUIREMENTS"][reward_names[1][i]]) != 0 and member.npc_kills - stats.npc >= int(self.config["REQUIREMENTS"][reward_names[1][i]]))
+                                        or (int(self.config["REQUIREMENTS"][reward_names[2][i]]) != 0 and member.user_kills - stats.pvp >= int(self.config["REQUIREMENTS"][reward_names[2][i]]))):
+                    if i == 0:
+                        user.daily = True
+                    elif i==1:
+                        user.weekly = True
+                    elif i == 2:
+                        user.weekly = True
 
-            date_temp = date - timedelta(days=1)
+                    user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2["mult"]) if cnf2 is not None else 1)
+                    await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
+                    if cnf is not None:
+                        try:
+                            channel = await self.client.fetch_channel(cnf["channel_id"])
+                            emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
+                            emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+                            await channel.send(embed=emb)
+                        except discord.errors.NotFound:
+                            print("Channel not found.")
+                        except discord.errors.Forbidden:
+                            print("Can't see/write on the channel")
+                            
+        # guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
+        # date = command_utils.get_in_game_day()
+        # cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
+        # cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        # for member in guild_member:
+        #     try:
+        #         user = User(**(await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})))
+        #     except TypeError:
+        #         continue
+        #     try:
+        #         daily_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})))
+        #     except TypeError:
+        #         continue
+        #     if not user.daily and ((int(self.config["REQUIREMENTS"]["daily_steps"]) != 0 and member.steps - daily_stats.steps >= int(self.config["REQUIREMENTS"]["daily_steps"]))
+        #                             or (int(self.config["REQUIREMENTS"]["daily_npc"]) != 0 and member.npc_kills - daily_stats.npc >= int(self.config["REQUIREMENTS"]["daily_npc"]))
+        #                             or (int(self.config["REQUIREMENTS"]["daily_pvp"]) != 0 and member.user_kills - daily_stats.pvp >= int(self.config["REQUIREMENTS"]["daily_pvp"]))):
+        #         user.daily = True
+        #         user.ett += int(self.config["REWARDS"]["daily_reward"]) * (int(cnf2["mult"]) if cnf2 is not None else 1)
+        #         await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
+        #         if cnf is not None:
+        #             try:
+        #                 channel = await self.client.fetch_channel(cnf["channel_id"])
+        #                 emb:discord.Embed = discord.Embed(title=f"Daily Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
+        #                 emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["daily_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+        #                 await channel.send(embed=emb)
+        #             except discord.errors.NotFound:
+        #                 print("Channel not found.")
+        #             except discord.errors.Forbidden:
+        #                 print("Can't see/write on the channel")
+
+        #     date_temp = date - timedelta(days=1)
          
-            try:
-                weekly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
-            except TypeError:
-                continue
-            if not user.weekly and ((int(self.config["REQUIREMENTS"]["weekly_steps"]) != 0 and member.steps - weekly_stats.steps >= int(self.config["REQUIREMENTS"]["weekly_steps"]))
-                                    or (int(self.config["REQUIREMENTS"]["weekly_npc"]) != 0 and member.npc_kills - weekly_stats.npc >= int(self.config["REQUIREMENTS"]["weekly_npc"]))
-                                    or (int(self.config["REQUIREMENTS"]["weekly_pvp"]) != 0 and member.user_kills - weekly_stats.pvp >= int(self.config["REQUIREMENTS"]["weekly_pvp"]))):
-                user.weekly = True
-                user.ett += int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
-                if cnf is not None:
-                    try:
-                        channel = await self.client.fetch_channel(cnf["channel_id"])
-                        emb:discord.Embed = discord.Embed(title=f"Weekly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
-                        await channel.send(embed=emb)
-                    except discord.errors.NotFound:
-                        print("Channel not found.")
-                    except discord.errors.Forbidden:
-                        print("Can't see/write on the channel")
-            date_temp = date - timedelta(weeks=4)
-            try:
-                monthly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
-            except TypeError:
-                continue
-            if not user.monthly and ((int(self.config["REQUIREMENTS"]["monthly_steps"]) != 0 and member.steps - monthly_stats.steps >= int(self.config["REQUIREMENTS"]["monthly_steps"]))
-                                     or (int(self.config["REQUIREMENTS"]["monthly_npc"]) != 0 and member.npc_kills - monthly_stats.npc >= int(self.config["REQUIREMENTS"]["monthly_npc"]))
-                                     or (int(self.config["REQUIREMENTS"]["monthly_pvp"]) != 0 and member.user_kills - monthly_stats.pvp >= int(self.config["REQUIREMENTS"]["monthly_pvp"]))):
-                user.monthly = True
-                user.ett += int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
+        #     try:
+        #         weekly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
+        #     except TypeError:
+        #         continue
+        #     if not user.weekly and ((int(self.config["REQUIREMENTS"]["weekly_steps"]) != 0 and member.steps - weekly_stats.steps >= int(self.config["REQUIREMENTS"]["weekly_steps"]))
+        #                             or (int(self.config["REQUIREMENTS"]["weekly_npc"]) != 0 and member.npc_kills - weekly_stats.npc >= int(self.config["REQUIREMENTS"]["weekly_npc"]))
+        #                             or (int(self.config["REQUIREMENTS"]["weekly_pvp"]) != 0 and member.user_kills - weekly_stats.pvp >= int(self.config["REQUIREMENTS"]["weekly_pvp"]))):
+        #         user.weekly = True
+        #         user.ett += int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
+        #         await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
+        #         if cnf is not None:
+        #             try:
+        #                 channel = await self.client.fetch_channel(cnf["channel_id"])
+        #                 emb:discord.Embed = discord.Embed(title=f"Weekly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
+        #                 emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["weekly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+        #                 await channel.send(embed=emb)
+        #             except discord.errors.NotFound:
+        #                 print("Channel not found.")
+        #             except discord.errors.Forbidden:
+        #                 print("Can't see/write on the channel")
+        #     date_temp = date - timedelta(weeks=4)
+        #     try:
+        #         monthly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
+        #     except TypeError:
+        #         continue
+        #     if not user.monthly and ((int(self.config["REQUIREMENTS"]["monthly_steps"]) != 0 and member.steps - monthly_stats.steps >= int(self.config["REQUIREMENTS"]["monthly_steps"]))
+        #                              or (int(self.config["REQUIREMENTS"]["monthly_npc"]) != 0 and member.npc_kills - monthly_stats.npc >= int(self.config["REQUIREMENTS"]["monthly_npc"]))
+        #                              or (int(self.config["REQUIREMENTS"]["monthly_pvp"]) != 0 and member.user_kills - monthly_stats.pvp >= int(self.config["REQUIREMENTS"]["monthly_pvp"]))):
+        #         user.monthly = True
+        #         user.ett += int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)
+        #         await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
                 
-                if cnf is not None:
-                    try:
-                        channel = await self.client.fetch_channel(cnf["channel_id"])
-                        emb:discord.Embed = discord.Embed(title=f"Monthly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                        emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
-                        await channel.send(embed=emb)
-                    except discord.errors.NotFound:
-                        print("Channel not found.")
-                    except discord.errors.Forbidden:
-                        print("Can't see/write on the channel")
+        #         if cnf is not None:
+        #             try:
+        #                 channel = await self.client.fetch_channel(cnf["channel_id"])
+        #                 emb:discord.Embed = discord.Embed(title=f"Monthly Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
+        #                 emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"]["monthly_reward"]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+        #                 await channel.send(embed=emb)
+        #             except discord.errors.NotFound:
+        #                 print("Channel not found.")
+        #             except discord.errors.Forbidden:
+        #                 print("Can't see/write on the channel")
 
     @tasks.loop(time=time(hour=12))
     async def check_lb(self):
