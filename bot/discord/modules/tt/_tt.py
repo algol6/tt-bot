@@ -44,82 +44,59 @@ class TT(commands.Cog):
     async def progress(self, ctx: ApplicationContext, user: discord.User = None) -> None:
         if user is None:
             user = ctx.user
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
-        if tmp is None:
+        try:
+            db_user = User(**(await Database.select_one(Collection.USER.value,{"discord_id":user.id})))
+        except TypeError:
             return await ctx.followup.send(content="User not registered.")
-        db_user = User(**tmp)
+
         gm_user = await SMMOApi.get_player_info(db_user.smmo_id)
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s progress", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
         date = command_utils.get_in_game_day()
-        daily = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":date.year,"month":date.month,"day":date.day})
+        reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
+        time:list[datetime] = [date ,date - timedelta(days=date.weekday()),date.replace(day=28) if date.day > 28 or (date.day == 28 and date.hour >= 12) else (date - timedelta(weeks=4)).replace(day=28)]
 
-        msg:str = ""    
-        perc = 0
-        if self.config["REQUIREMENTS"]["daily_steps"] != "0":
-            msg += f"**Steps**: {0 if daily is None else gm_user.steps - daily["steps"]}/{self.config["REQUIREMENTS"]["daily_steps"]}\n"
-            if daily is not None:
-                perc = ((gm_user.steps - daily["steps"])/int(self.config["REQUIREMENTS"]["daily_steps"])) * 10
-        if self.config["REQUIREMENTS"]["daily_npc"] != "0":
-            msg += f"**Npc Kills**: {0 if daily is None else gm_user.npc_kills - daily["npc"]}/{self.config["REQUIREMENTS"]["daily_npc"]}\n"
-            if daily is not None:
-                perc = max(((gm_user.npc_kills - daily["npc"])/int(self.config["REQUIREMENTS"]["daily_npc"])) * 10,perc)
-        if self.config["REQUIREMENTS"]["daily_pvp"] != "0":
-            msg += f"**Pvp Kills**: {0 if daily is None else gm_user.user_kills - daily["pvp"]}/{self.config["REQUIREMENTS"]["daily_pvp"]}\n"
-            if daily is not None:
-                perc = max(((gm_user.user_kills - daily["pvp"])/int(self.config["REQUIREMENTS"]["daily_pvp"])) * 10,perc)
-        
-        msg += f"[{"".join(":green_square:" if x+1<round(perc) else ":white_large_square:" for x in range(10))}] *{max(min(perc*10, 100), 0):.2f}*%"
-        emb.add_field(name="Daily",value=msg,inline=False)
-        
-        w_date = date - timedelta(days=date.weekday())
-        weekly = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":w_date.year,"month":w_date.month,"day":w_date.day})
-
-        msg:str = ""
-        perc = 0
-        if self.config["REQUIREMENTS"]["weekly_steps"] != "0":
-            msg += f"**Steps**: {0 if weekly is None else gm_user.steps - weekly["steps"]}/{self.config["REQUIREMENTS"]["weekly_steps"]}\n"
-            if weekly is not None:
-                perc = ((gm_user.steps - weekly["steps"])/int(self.config["REQUIREMENTS"]["weekly_steps"])) * 10
-        if self.config["REQUIREMENTS"]["weekly_npc"] != "0":
-            msg += f"**Npc Kills**: {0 if weekly is None else gm_user.npc_kills - weekly["npc"]}/{self.config["REQUIREMENTS"]["weekly_npc"]}\n"
-            if weekly is not None:
-                perc = max(((gm_user.npc_kills - weekly["npc"])/int(self.config["REQUIREMENTS"]["weekly_npc"])) * 10,perc)
-        if self.config["REQUIREMENTS"]["weekly_pvp"] != "0":
-            msg += f"**Pvp Kills**: {0 if weekly is None else gm_user.user_kills - weekly["pvp"]}/{self.config["REQUIREMENTS"]["weekly_pvp"]}\n"
-            if weekly is not None:
-                perc = max(((gm_user.user_kills - weekly["pvp"])/int(self.config["REQUIREMENTS"]["weekly_pvp"])) * 10,perc)
-                
-        msg += f"[{"".join(":green_square:" if x+1<round(perc) else ":white_large_square:" for x in range(10))}] *{max(min(perc*10, 100), 0):.2f}*%"
-        emb.add_field(name="Weekly",value=msg,inline=False)
-        
-        m_date = date
-        if date.day > 28 or (date.day == 28 and date.hour >= 12):
-            m_date = m_date.replace(day=28)
-        else:
-            m_date -= timedelta(weeks=4)
-            m_date = m_date.replace(day=28)
-
-        monthly = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":m_date.year,"month":m_date.month,"day":m_date.day})
-
-        msg:str = ""
-        perc = 0
-        if self.config["REQUIREMENTS"]["monthly_steps"] != "0":
-            msg += f"**Steps**: {0 if monthly is None else gm_user.steps - monthly["steps"]}/{self.config["REQUIREMENTS"]["monthly_steps"]}\n"
-            if monthly is not None:
-                perc = ((gm_user.steps - monthly["steps"])/int(self.config["REQUIREMENTS"]["monthly_steps"])) * 10
-        if self.config["REQUIREMENTS"]["monthly_npc"] != "0":
-            msg += f"**Npc Kills**: {0 if monthly is None else gm_user.npc_kills - monthly["npc"]}/{self.config["REQUIREMENTS"]["monthly_npc"]}\n"
-            if monthly is not None:
-                perc = max(((gm_user.npc_kills - monthly["npc"])/int(self.config["REQUIREMENTS"]["monthly_npc"])) * 10,perc)
-        if self.config["REQUIREMENTS"]["monthly_pvp"] != "0":
-            msg += f"**Pvp Kills**: {0 if monthly is None else gm_user.user_kills - monthly["pvp"]}/{self.config["REQUIREMENTS"]["monthly_pvp"]}\n"
-            if monthly is not None:
-                perc = max(((gm_user.user_kills - monthly["pvp"])/int(self.config["REQUIREMENTS"]["monthly_pvp"])) * 10,perc)
-                
-        msg += f"[{"".join(":green_square:" if x+1<round(perc) else ":white_large_square:" for x in range(10))}] *{max(min(perc*10, 100), 0):.2f}*%"
-        emb.add_field(name="Monthly",value=msg,inline=False)
+        for i in range(3):
+            msg:str = ""    
+            perc:int = 0
+            stat:dict|None = await Database.select_one(Collection.STATS.value, {"smmo_id":db_user.smmo_id,"year":time[i].year,"month":time[i].month,"day":time[i].day})
+            if self.config["REQUIREMENTS"][reward_names[0][i]] != "0":
+                try:
+                    msg += f"**Steps**: {0 if stat is None else gm_user.steps - stat["steps"]}/{self.config["REQUIREMENTS"][reward_names[0][i]]}\n"
+                except AttributeError:
+                    pass
+                try:
+                    perc = ((gm_user.steps - stat["steps"])/int(self.config["REQUIREMENTS"][reward_names[0][i]])) * 10
+                except KeyError:
+                    pass
+                except TypeError:
+                    pass
+            if self.config["REQUIREMENTS"][reward_names[1][i]] != "0":
+                try:
+                    msg += f"**Npc Kills**: {0 if stat is None else gm_user.npc_kills - stat["npc"]}/{self.config["REQUIREMENTS"][reward_names[1][i]]}\n"
+                except AttributeError:
+                    pass
+                try:
+                    perc = max(((gm_user.npc_kills - stat["npc"])/int(self.config["REQUIREMENTS"][reward_names[1][i]])) * 10,perc)
+                except KeyError:
+                    pass
+                except TypeError:
+                    pass
+            if self.config["REQUIREMENTS"][reward_names[2][i]] != "0":
+                try:
+                    msg += f"**Pvp Kills**: {0 if stat is None else gm_user.user_kills - stat["pvp"]}/{self.config["REQUIREMENTS"][reward_names[2][i]]}\n"
+                except AttributeError:
+                    pass
+                try:
+                    perc = max(((gm_user.user_kills - stat["pvp"])/int(self.config["REQUIREMENTS"][reward_names[2][i]])) * 10,perc)
+                except KeyError:
+                    pass
+                except TypeError:
+                    pass
+            msg += f"[{"".join(":green_square:" if x+1<round(perc) else ":white_large_square:" for x in range(10))}] *{max(min(perc*10, 100), 0):.2f}*%"
+            emb.add_field(name=["Daily","Weekly","Monthly"][i],value=msg,inline=False)
 
         await ctx.followup.send(embed=emb)
+        
         
     @subcommand("admin")
     @slash_command(description="Register a user into TT system")
