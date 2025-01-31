@@ -167,10 +167,10 @@ class Admin(commands.Cog):
                 continue
 
             user = User(**user)
-            daily_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})
-            if daily_stats is None:
+            try:
+                daily_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})))
+            except TypeError:
                 continue
-            daily_stats = GameStats(**daily_stats)
             if not user.daily and ((int(self.config["REQUIREMENTS"]["daily_steps"]) != 0 and member.steps - daily_stats.steps >= int(self.config["REQUIREMENTS"]["daily_steps"]))
                                     or (int(self.config["REQUIREMENTS"]["daily_npc"]) != 0 and member.npc_kills - daily_stats.npc >= int(self.config["REQUIREMENTS"]["daily_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["daily_pvp"]) != 0 and member.user_kills - daily_stats.pvp >= int(self.config["REQUIREMENTS"]["daily_pvp"]))):
@@ -189,11 +189,11 @@ class Admin(commands.Cog):
                         print("Can't see/write on the channel")
 
             date_temp = date - timedelta(days=1)
-            weekly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
-            if weekly_stats is None:
+         
+            try:
+                weekly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
+            except TypeError:
                 continue
-            weekly_stats = GameStats(**weekly_stats)
-
             if not user.weekly and ((int(self.config["REQUIREMENTS"]["weekly_steps"]) != 0 and member.steps - weekly_stats.steps >= int(self.config["REQUIREMENTS"]["weekly_steps"]))
                                     or (int(self.config["REQUIREMENTS"]["weekly_npc"]) != 0 and member.npc_kills - weekly_stats.npc >= int(self.config["REQUIREMENTS"]["weekly_npc"]))
                                     or (int(self.config["REQUIREMENTS"]["weekly_pvp"]) != 0 and member.user_kills - weekly_stats.pvp >= int(self.config["REQUIREMENTS"]["weekly_pvp"]))):
@@ -211,10 +211,10 @@ class Admin(commands.Cog):
                     except discord.errors.Forbidden:
                         print("Can't see/write on the channel")
             date_temp = date - timedelta(weeks=4)
-            monthly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
-            if monthly_stats is None:
+            try:
+                monthly_stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})))
+            except TypeError:
                 continue
-            monthly_stats = GameStats(**monthly_stats)
             if not user.monthly and ((int(self.config["REQUIREMENTS"]["monthly_steps"]) != 0 and member.steps - monthly_stats.steps >= int(self.config["REQUIREMENTS"]["monthly_steps"]))
                                      or (int(self.config["REQUIREMENTS"]["monthly_npc"]) != 0 and member.npc_kills - monthly_stats.npc >= int(self.config["REQUIREMENTS"]["monthly_npc"]))
                                      or (int(self.config["REQUIREMENTS"]["monthly_pvp"]) != 0 and member.user_kills - monthly_stats.pvp >= int(self.config["REQUIREMENTS"]["monthly_pvp"]))):
