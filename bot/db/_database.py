@@ -61,12 +61,15 @@ class Database:
                         '$limit': 1
                     }
                 ]
+                
             aaaa =  await db[collection].aggregate(obj).to_list()
             if len(aaaa) == 0:
                 return None
             return aaaa[0]
-        
-        return await db[collection].find_one(obj)
+        try:
+            return await db[collection].find_one(obj)
+        except:
+            return None
     
     @staticmethod
     async def select(collection:str):
@@ -75,7 +78,7 @@ class Database:
         return await cursor.to_list()
     
     @staticmethod
-    async def update_one(collection:str, old_obj:dict, new_obj:dict):
+    async def update_one(collection:str, old_obj:dict, new_obj:dict) -> None:
         db = await Database._get_db()
         await db[collection].update_one({"_id":old_obj["_id"]}, {"$set":new_obj})
 
