@@ -144,7 +144,5 @@ class TT(commands.Cog):
         await view.send(ctx)
 
 
-
-
 def setup(client: discord.Bot):
     client.add_cog(TT(client))
