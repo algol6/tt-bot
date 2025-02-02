@@ -342,31 +342,40 @@ class Admin(commands.Cog):
         # and finally give the reward to the top player of the day/week/month
         names = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
         for i in range(3):
-            msg:str = ""
+            msg:list[str] = ["","",""]
             for us,rew,index in zip(lbs_npc[i],int(self.config[names[i]]),range(len(self.config[names[i]]))):
+                if index == 0:
+                    msg[0] += "**NPC**\n"
                 us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg += f"NPC\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                msg[0] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
+                if index == 0:
+                    msg[1] += "**Steps**\n"
                 us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
+                if index == 0:
+                    msg[2] += "**PVP**\n"
                 us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg += f"PVP\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                msg[2] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
                 try:
                     channel = await self.client.fetch_channel(cnf["channel_id"])
                     emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Leaderboard reward!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                    emb.add_field(name="", value=msg)
+                    for i in range(3):
+                        if len(msg[i]) == 0:
+                            continue
+                        emb.add_field(name="", value=msg[i])
                     await channel.send(embed=emb)
                 except discord.errors.NotFound:
                     print("Channel not found.")
                 except discord.errors.Forbidden:
                     print("Can't see/write on the channel")
-                    
+
 def setup(client: discord.Bot):
     client.add_cog(Admin(client))
