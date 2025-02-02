@@ -136,10 +136,8 @@ class Admin(commands.Cog):
     
     @tasks.loop(time=time(hour=12))
     async def save_stats(self):
-        guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
-
-        date = command_utils.get_in_game_day()
-
+        guild_member:list = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
+        date:datetime = command_utils.get_in_game_day()
         await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day, "time":int(date.timestamp())} for member in guild_member])
 
         users = await Database.select(Collection.USER.value)
@@ -181,7 +179,7 @@ class Admin(commands.Cog):
                                         or (int(self.config["REQUIREMENTS"][reward_names[2][i]]) != 0 and member.user_kills - stats.pvp >= int(self.config["REQUIREMENTS"][reward_names[2][i]]))):
                     if i == 0:
                         user.daily = True
-                    elif i==1:
+                    elif i == 1:
                         user.weekly = True
                     elif i == 2:
                         user.weekly = True
@@ -279,7 +277,8 @@ class Admin(commands.Cog):
         # get guild member
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
-        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult"})
+        cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
+        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
 
         lbs_npc = [[],[],[]]
         lbs_stp = [[],[],[]]
