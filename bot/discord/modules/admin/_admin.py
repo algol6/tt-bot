@@ -346,21 +346,21 @@ class Admin(commands.Cog):
             for us,rew,index in zip(lbs_npc[i],int(self.config[names[i]]),range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[0] += "**NPC**\n"
-                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
                 msg[0] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[1] += "**Steps**\n"
-                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
                 msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[2] += "**PVP**\n"
-                us["user"].ett += rew * (cnf2["mult"] if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
                 await Database.update_one(Collection.USER.value,us["user"],us["user"])
                 msg[2] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
