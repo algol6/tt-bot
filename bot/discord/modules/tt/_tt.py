@@ -143,6 +143,11 @@ class TT(commands.Cog):
 
         await view.send(ctx)
 
+    @slash_command()
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    async def ping(self, ctx: ApplicationContext, more_info:bool = False) -> None:
+        await ctx.followup.send(content=f"Bot is working with {round(self.client.latency *1000)} ping")
 
 def setup(client: discord.Bot):
     client.add_cog(TT(client))
