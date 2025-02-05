@@ -53,10 +53,9 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @permissions.require_admin_or_staff()
     async def gbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_user_discord(user.id)
-        if tmp is None:
+        db_user = await Database.select_user_discord(user.id)
+        if db_user is None:
             return await ctx.followup.send(content="The user isn't registered.")
-        db_user:User = User(**tmp)
 
         db_user.btt += amount
 
@@ -70,10 +69,9 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @permissions.require_admin_or_staff()
     async def rbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_user_discord(user.id)
-        if tmp is None:
+        db_user = await Database.select_user_discord(user.id)
+        if db_user is None:
             return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
 
         db_user.btt -= amount
 
@@ -87,10 +85,9 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @permissions.require_admin_or_staff()
     async def gett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_user_discord(user.id)
-        if tmp is None:
+        db_user = await Database.select_user_discord(user.id)
+        if db_user is None:
             return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
 
         db_user.ett += amount
 
@@ -104,10 +101,9 @@ class Admin(commands.Cog):
     @discord.guild_only()
     @permissions.require_admin_or_staff()
     async def rett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_user_discord(user.id)
-        if tmp is None:
+        db_user = await Database.select_user_discord(user.id)
+        if db_user is None:
             return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
 
         db_user.ett -= amount
 

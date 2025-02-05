@@ -24,10 +24,9 @@ class TT(commands.Cog):
     @command_utils.auto_defer(False)
     @discord.guild_only()
     async def balance(self, ctx: ApplicationContext) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":ctx.user.id})
-        if tmp is None:
+        db_user = await Database.select_one(Collection.USER.value,{"discord_id":ctx.user.id})
+        if db_user is None:
             return await ctx.followup.send(content="You are not registered.")
-        db_user = User(**tmp)
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s TT Balance :bank:", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
 
         emb.add_field(name="ETT",value=f"{db_user.ett}",inline=True)
