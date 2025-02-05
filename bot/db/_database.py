@@ -23,7 +23,12 @@ class Database:
     MYSQL_USER = getenv("MYSQL_USER")
     MYSQL_PASSWORD = getenv("MYSQL_PASSWORD")
     MYSQL_DB = getenv("MYSQL_DB")
-
+    
+    print("MYSQL_ROUTER_HOST", MYSQL_ROUTER_HOST)
+    print("MYSQL_ROUTER_PORT", MYSQL_ROUTER_PORT)
+    print("MYSQL_USER", MYSQL_USER)
+    print("MYSQL_PASSWORD", MYSQL_PASSWORD)
+    print("MYSQL_DB", MYSQL_DB)
     @staticmethod
     async def _select(query:str, parameters:tuple=()) -> list | None:
         try:
