@@ -207,13 +207,13 @@ class Admin(commands.Cog):
                     elif i == 2:
                         user.weekly = True
 
-                    user.ett += int(self.config["REWARDS"][reward[i]]) * (cnf2.value if cnf2 is not None else 1)
+                    user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
                     if cnf is not None:
                         try:
-                            channel = await self.client.fetch_channel(cnf.value)
+                            channel = await self.client.fetch_channel(int(cnf.value))
                             emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                            emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (cnf2.value if cnf2 is not None else 1)} ETT")
+                            emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{int(user.discord_id)}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)} ETT")
                             await channel.send(embed=emb)
                         except discord.errors.NotFound:
                             print("Channel not found.")
@@ -367,26 +367,26 @@ class Admin(commands.Cog):
             for us,rew,index in zip(lbs_npc[i],int(self.config[names[i]]),range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[0] += "**NPC**\n"
-                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2.value) if cnf2 is not None else 1)
                 await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[0] += f"#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
+                msg[0] += f"#{index+1} {us["user"].ign} +{rew * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[1] += "**Steps**\n"
-                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2.value) if cnf2 is not None else 1)
                 await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
+                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[2] += "**PVP**\n"
-                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                us["user"].ett += rew * (int(cnf2.value) if cnf2 is not None else 1)
                 await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[2] += f"#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
+                msg[2] += f"#{index+1} {us["user"].ign} +{rew * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
                 try:
-                    channel = await self.client.fetch_channel(cnf.value)
+                    channel = await self.client.fetch_channel(int(cnf.value))
                     emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Leaderboard reward!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
                     for i in range(3):
                         if len(msg[i]) == 0:

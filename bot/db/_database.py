@@ -63,7 +63,7 @@ class Database:
     async def create_table() -> None:
         sql_statements = [
             """CREATE TABLE IF NOT EXISTS user(
-                discord_id INTEGER(20) PRIMARY KEY,
+                discord_id CHAR(30) PRIMARY KEY,
                 smmo_id INTEGER(10) UNIQUE,
                 ign CHAR(30),
                 ett INTEGER(10),
@@ -84,7 +84,7 @@ class Database:
 
             """CREATE TABLE IF NOT EXISTS config(
                 name CHAR(4) PRIMARY KEY,
-                value INTEGER(20)
+                value CHAR(20)
             );""",
         ]
 
