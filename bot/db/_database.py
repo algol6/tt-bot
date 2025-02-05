@@ -34,9 +34,9 @@ class Database:
                                         db=Database.MYSQL_DB) as db:
                 async with await db.cursor() as cur:
                     await cur.execute(query,parameters)
-                    res = await cur.fetchall()
+                    res = [list(x) for x in res]
                     print(res)
-                    return [list(x) for x in res]
+                    return res
         except Exception as e:
             print(e)
             return None
