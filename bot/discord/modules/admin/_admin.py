@@ -13,152 +13,152 @@ class Admin(commands.Cog):
     def __init__(self, client) -> None:
         self.config = command_utils.get_config()
         self.client = client
-        # self.save_stats.start()
-        # self.check_stats.start()
-        # self.check_lb.start()
+        self.save_stats.start()
+        self.check_stats.start()
+        self.check_lb.start()
 
     def cog_unload(self) -> None:
         self.save_stats.cancel()
         self.check_stats.cancel()
         self.check_lb.cancel()
 
+    # @subcommand("admin")
+    # @slash_command()
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def migrate(self, ctx: ApplicationContext) -> None:
+    #     config = await Database2.select(Collection.CONFIG.value)
+    #     users = await Database2.select(Collection.USER.value)
+    #     stats = await Database2.select(Collection.STATS.value)
+
+    #     await Database.create_table()
+    #     for c in config:
+    #         if "channel_id" in c:
+    #             await Database.insert_config("chid",c["channel_id"])
+    #         if "mult" in c:
+    #             await Database.insert_config("mult",1)
+
+    #     for u in users:
+    #         await Database.insert_user(u["discord_id"],u["smmo_id"],u["ign"],u["ett"],u["btt"],u["daily"],u["weekly"],u["monthly"])
+            
+    #     for s in stats:
+    #         await Database.insert_stats(s["smmo_id"],s["steps"],s["npc"],s["pvp"],datetime(s["year"],s["month"],s["day"],hour=12,minute=0,microsecond=0,tzinfo=timezone.utc))
+
+    #     await ctx.followup.send("DONE")
+
     @subcommand("admin")
-    @slash_command()
+    @slash_command(description="Give BTT to one user")
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    async def migrate(self, ctx: ApplicationContext) -> None:
-        config = await Database2.select(Collection.CONFIG.value)
-        users = await Database2.select(Collection.USER.value)
-        stats = await Database2.select(Collection.STATS.value)
+    async def gbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+        tmp = await Database.select_user_discord(user.id)
+        if tmp is None:
+            return await ctx.followup.send(content="The user isn't registered.")
+        db_user:User = User(**tmp)
 
-        await Database.create_table()
-        for c in config:
-            if "channel_id" in c:
-                await Database.insert_config("chid",c["channel_id"])
-            if "mult" in c:
-                await Database.insert_config("mult",1)
+        db_user.btt += amount
 
-        for u in users:
-            await Database.insert_user(u["discord_id"],u["smmo_id"],u["ign"],u["ett"],u["btt"],u["daily"],u["weekly"],u["monthly"])
-            
-        for s in stats:
-            await Database.insert_stats(s["smmo_id"],s["steps"],s["npc"],s["pvp"],datetime(s["year"],s["month"],s["day"],hour=12,minute=0,microsecond=0,tzinfo=timezone.utc))
-
-        await ctx.followup.send("DONE")
-
-    # @subcommand("admin")
-    # @slash_command(description="Give BTT to one user")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def gbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-    #     tmp = await Database.select_user_discord(user.id)
-    #     if tmp is None:
-    #         return await ctx.followup.send(content="The user isn't registered.")
-    #     db_user:User = User(**tmp)
-
-    #     db_user.btt += amount
-
-    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
-    #     await ctx.followup.send(content="BTT Added")
+        await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+        await ctx.followup.send(content="BTT Added")
 
 
-    # @subcommand("admin")
-    # @slash_command(description="Remove BTT from one user")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def rbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-    #     tmp = await Database.select_user_discord(user.id)
-    #     if tmp is None:
-    #         return await ctx.followup.send(content="The user isn't registered.")
-    #     db_user = User(**tmp)
+    @subcommand("admin")
+    @slash_command(description="Remove BTT from one user")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def rbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+        tmp = await Database.select_user_discord(user.id)
+        if tmp is None:
+            return await ctx.followup.send(content="The user isn't registered.")
+        db_user = User(**tmp)
 
-    #     db_user.btt -= amount
+        db_user.btt -= amount
 
-    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
-    #     await ctx.followup.send(content="BTT Removed")
-
-
-    # @subcommand("admin")
-    # @slash_command(description="Give ETT to one user")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def gett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-    #     tmp = await Database.select_user_discord(user.id)
-    #     if tmp is None:
-    #         return await ctx.followup.send(content="The user isn't registered.")
-    #     db_user = User(**tmp)
-
-    #     db_user.ett += amount
-
-    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
-    #     await ctx.followup.send(content="ETT Added")
+        await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+        await ctx.followup.send(content="BTT Removed")
 
 
-    # @subcommand("admin")
-    # @slash_command(description="Remove ETT from one user")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def rett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-    #     tmp = await Database.select_user_discord(user.id)
-    #     if tmp is None:
-    #         return await ctx.followup.send(content="The user isn't registered.")
-    #     db_user = User(**tmp)
+    @subcommand("admin")
+    @slash_command(description="Give ETT to one user")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def gett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+        tmp = await Database.select_user_discord(user.id)
+        if tmp is None:
+            return await ctx.followup.send(content="The user isn't registered.")
+        db_user = User(**tmp)
 
-    #     db_user.ett -= amount
+        db_user.ett += amount
 
-    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
-    #     await ctx.followup.send(content="ETT Removed")
-
-
-    # @subcommand("admin")
-    # @slash_command(description="Start event")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # @discord.option(name="multipler", description="multiply the gains by x times")
-    # async def start_event(self, ctx: ApplicationContext, multipler: int) -> None:
-    #     cfn = await Database.select_config("mult")
-    #     if cfn is not None or cfn.value != 1:
-    #         return await ctx.followup.send("Event already on.")
-    #     cfn.value = multipler
-    #     await Database.update_config(cfn.name,cfn.value)
-    #     await ctx.followup.send("Done")
+        await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+        await ctx.followup.send(content="ETT Added")
 
 
-    # @subcommand("admin")
-    # @slash_command(description="End event")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def end_event(self, ctx: ApplicationContext, multipler: int) -> None:
-    #     cfn = await Database.select_config("mult")
-    #     if cfn is None or cfn.value == 1:
-    #         return await ctx.followup.send("No Events on.")
-    #     cfn.value = 1
-    #     await Database.update_config(cfn.name,cfn.value)
-    #     await ctx.followup.send("Done")
+    @subcommand("admin")
+    @slash_command(description="Remove ETT from one user")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def rett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+        tmp = await Database.select_user_discord(user.id)
+        if tmp is None:
+            return await ctx.followup.send(content="The user isn't registered.")
+        db_user = User(**tmp)
 
-    # @subcommand("admin")
-    # @slash_command(description="Select notification channel")
-    # @command_utils.auto_defer()
-    # @discord.guild_only()
-    # @permissions.require_admin_or_staff()
-    # async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel) -> None:
-    #     try:
-    #         ch = await self.client.fetch_channel(channel.id)
-    #         await ch.send(content="test message.", delete_after=1)
-    #     except discord.errors.Forbidden:
-    #         return await ctx.followup.send(content="Bot doesn't have the perms to see/write the channel.")
+        db_user.ett -= amount
+
+        await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+        await ctx.followup.send(content="ETT Removed")
+
+
+    @subcommand("admin")
+    @slash_command(description="Start event")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    @discord.option(name="multipler", description="multiply the gains by x times")
+    async def start_event(self, ctx: ApplicationContext, multipler: int) -> None:
+        cfn = await Database.select_config("mult")
+        if cfn is not None or cfn.value != 1:
+            return await ctx.followup.send("Event already on.")
+        cfn.value = multipler
+        await Database.update_config(cfn.name,cfn.value)
+        await ctx.followup.send("Done")
+
+
+    @subcommand("admin")
+    @slash_command(description="End event")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def end_event(self, ctx: ApplicationContext, multipler: int) -> None:
+        cfn = await Database.select_config("mult")
+        if cfn is None or cfn.value == 1:
+            return await ctx.followup.send("No Events on.")
+        cfn.value = 1
+        await Database.update_config(cfn.name,cfn.value)
+        await ctx.followup.send("Done")
+
+    @subcommand("admin")
+    @slash_command(description="Select notification channel")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel) -> None:
+        try:
+            ch = await self.client.fetch_channel(channel.id)
+            await ch.send(content="test message.", delete_after=1)
+        except discord.errors.Forbidden:
+            return await ctx.followup.send(content="Bot doesn't have the perms to see/write the channel.")
         
-    #     if not await Database.insert_config("chid",channel.id):
-    #         await Database.update_config("chid",channel.id)
+        if not await Database.insert_config("chid",channel.id):
+            await Database.update_config("chid",channel.id)
 
-    #     await ctx.followup.send("Done")
+        await ctx.followup.send("Done")
     
     @tasks.loop(time=time(hour=12))
     async def save_stats(self):
