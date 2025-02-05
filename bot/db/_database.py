@@ -24,11 +24,6 @@ class Database:
     MYSQL_PASSWORD = getenv("MYSQL_PASSWORD")
     MYSQL_DB = getenv("MYSQL_DB")
 
-    print("MYSQL_ROUTER_HOST", MYSQL_ROUTER_HOST)
-    print("MYSQL_ROUTER_PORT", MYSQL_ROUTER_PORT)
-    print("MYSQL_USER", MYSQL_USER)
-    print("MYSQL_PASSWORD", MYSQL_PASSWORD)
-    print("MYSQL_DB", MYSQL_DB)
     @staticmethod
     async def _select(query:str, parameters:tuple=()) -> list | None:
         try:
@@ -39,7 +34,9 @@ class Database:
                                         db=Database.MYSQL_DB) as db:
                 async with await db.cursor() as cur:
                     await cur.execute(query,parameters)
-                    return [list(x) for x in await cur.fetchall()]
+                    res = await cur.fetchall()
+                    print(res)
+                    return [list(x) for x in res]
         except Exception as e:
             print(e)
             return None
