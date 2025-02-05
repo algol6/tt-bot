@@ -157,7 +157,7 @@ class Database:
     @staticmethod
     async def insert_config(name:str,value:int) -> bool:
         try:
-            await Database._insert("INSERT INTO congif VALUES (%s,%s)",(name,value,))
+            await Database._insert("INSERT INTO config VALUES (%s,%s)",(name,value,))
             return True
         except IntegrityError:
             return False
