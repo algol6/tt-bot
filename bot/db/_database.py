@@ -34,10 +34,8 @@ class Database:
                                         db=Database.MYSQL_DB) as db:
                 async with await db.cursor() as cur:
                     await cur.execute(query,parameters)
-                    res = list(await cur.fetchall())
-                    res = [list(x) for x in res] if len(res)!=0 and type(res[0]) is tuple else res
-                    print(res)
-                    return res
+                    res = [x for x in await cur.fetchall()]
+                    return [[v for v in x] for x in res] if len(res)!=0 and type(res[0]) is tuple else res
         except Exception as e:
             print(e)
             return None
@@ -93,21 +91,21 @@ class Database:
     async def select_user_discord(discord_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE discord_id=%s",(discord_id,))
         if data is not None and len(data) != 0:
-            return model.User(**data)
+            return model.User(*data)
         return None
     
     @staticmethod
     async def select_user_smmoid(smmo_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE smmo_id=%s",(smmo_id,))
         if data is not None and len(data) != 0:
-            return model.User(**data)
+            return model.User(*data)
         return None
     
     @staticmethod
     async def select_user_all() -> list[model.User]:
         data = await Database._select("SELECT * FROM user")
         if data is not None and len(data) != 0:
-            return [model.User(**v) for v in data]
+            return [model.User(*v) for v in data]
         return []
     
     @staticmethod
@@ -149,7 +147,7 @@ class Database:
     async def select_config(name:str) -> model.Config | None:
         data = await Database._select("SELECT * FROM config WHERE name=%s",(name,))
         if data is not None and len(data) != 0:
-            return model.Config(**data)
+            return model.Config(*data)
         return None
 
     @staticmethod
