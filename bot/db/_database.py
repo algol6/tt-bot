@@ -167,17 +167,17 @@ class Database2:
     @staticmethod
     async def _get_db() -> AsyncIOMotorClient:
         async with sem:
-            client = AsyncIOMotorClient(Database.uri, server_api=ServerApi('1'))
+            client = AsyncIOMotorClient(Database2.uri, server_api=ServerApi('1'))
             return client.ttdb
 
     @staticmethod
     async def insert_one(collection:str,obj:dict):
-        db = await Database._get_db()
+        db = await Database2._get_db()
         await db[collection].insert_one(obj)
 
     @staticmethod
     async def insert(collection:str,objs:list[dict]):
-        db = await Database._get_db()
+        db = await Database2._get_db()
         return await db[collection].insert_many([x for x in objs])
 
     @staticmethod
