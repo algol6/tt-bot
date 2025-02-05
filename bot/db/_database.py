@@ -34,7 +34,8 @@ class Database:
                                         db=Database.MYSQL_DB) as db:
                 async with await db.cursor() as cur:
                     await cur.execute(query,parameters)
-                    res = [list(x) for x in res]
+                    res = list(await cur.fetchall())
+                    res = [list(x) for x in res] if len(res)!=0 and type(res[0]) is tuple else res
                     print(res)
                     return res
         except Exception as e:
