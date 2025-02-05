@@ -93,14 +93,14 @@ class Database:
 
     @staticmethod
     async def select_user_discord(discord_id:int) -> model.User | None:
-        data = await Database._select("SELECT * FROM user WHERE discord_id=?",(discord_id,))
+        data = await Database._select("SELECT * FROM user WHERE discord_id=%s",(discord_id,))
         if data is not None:
             return model.User(**data)
         return None
     
     @staticmethod
     async def select_user_smmoid(smmo_id:int) -> model.User | None:
-        data = await Database._select("SELECT * FROM user WHERE smmo_id=?",(smmo_id,))
+        data = await Database._select("SELECT * FROM user WHERE smmo_id=%s",(smmo_id,))
         if data is not None:
             return model.User(**data)
         return None
@@ -115,22 +115,22 @@ class Database:
     @staticmethod
     async def insert_user(discord_id:int, smmo_id:int, ign:str, ett:int, btt:int, daily:bool, weekly:bool, monthly:bool) -> bool:
         try:
-            await Database._insert("INSERT INTO user VALUES (?,?,?,?,?,?,?,?)",(discord_id,smmo_id,ign,ett,btt,daily,weekly,monthly,))
+            await Database._insert("INSERT INTO user VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",(discord_id,smmo_id,ign,ett,btt,daily,weekly,monthly,))
             return True
         except IntegrityError:
             return False
 
     @staticmethod
     async def update_user(discord_id:int,ign:str,ett:int,btt:int,daily:bool,weekly:bool,monthly:bool):
-        await Database._insert("UPDATE user SET ign=?,ett=?,btt=?,daily=?,weekly=?,monthly=? WHERE discord_id=?",(ign,ett,btt,daily,weekly,monthly,discord_id))
+        await Database._insert("UPDATE user SET ign=%s,ett=%s,btt=%s,daily=%s,weekly=%s,monthly=%s WHERE discord_id=%s",(ign,ett,btt,daily,weekly,monthly,discord_id))
 
     @staticmethod
     async def delete_user(smmo_id:int) -> None:
-        await Database._insert("DELETE FROM user WHERE smmo_id=?",(smmo_id,))
+        await Database._insert("DELETE FROM user WHERE smmo_id=%s",(smmo_id,))
 
     @staticmethod
     async def select_stats(smmo_id:int, datetime:datetime) -> model.GameStats | None:
-        data = await Database._select("SELECT * FROM stats WHERE smmo_id=? AND datetime>=? ORDER BY datetime DESC LIMIT 1")
+        data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND datetime>=%s ORDER BY datetime DESC LIMIT 1")
         if data is not None:
             return model.GameStats(**data)
         return None
@@ -138,18 +138,18 @@ class Database:
     @staticmethod
     async def insert_stats(smmo_id:int,steps:int,npc:int,pvp:int,datetime:datetime) -> bool:
         try:
-            await Database._insert("INSERT INTO stats VALUES (?,?,?,?,?)",(smmo_id,steps,npc,pvp,datetime,))
+            await Database._insert("INSERT INTO stats VALUES (%s,%s,%s,%s,%s)",(smmo_id,steps,npc,pvp,datetime,))
             return True
         except IntegrityError:
             return False
 
     @staticmethod
     async def delete_stats(datetime:datetime) -> None:
-        await Database._insert("DELETE FROM stats WHERE datetime<=?",(datetime,))
+        await Database._insert("DELETE FROM stats WHERE datetime<=%s",(datetime,))
 
     @staticmethod
     async def select_config(name:str) -> model.Config | None:
-        data = await Database._select("SELECT * FROM config WHERE name=?",(name,))
+        data = await Database._select("SELECT * FROM config WHERE name=%s",(name,))
         if data is not None:
             return model.Config(**data)
         return None
@@ -157,14 +157,14 @@ class Database:
     @staticmethod
     async def insert_config(name:str,value:int) -> bool:
         try:
-            await Database._insert("INSERT INTO congif VALUES (?,?)",(name,value,))
+            await Database._insert("INSERT INTO congif VALUES (%s,%s)",(name,value,))
             return True
         except IntegrityError:
             return False
         
     @staticmethod
     async def update_config(name:str,value:int) -> None:
-        await Database._insert("UPDATE config SET value=? WHERE name=?",(value,name,))
+        await Database._insert("UPDATE config SET value=%s WHERE name=%s",(value,name,))
         
 class Database2:
     uri:str = getenv("DATABASE_URI")
