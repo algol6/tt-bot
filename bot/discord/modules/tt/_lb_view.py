@@ -59,7 +59,7 @@ class LeaderBoardView(discord.ui.View):
                             color=self.color)
         until_item = self.current_page * self.sep
         from_item = until_item - self.sep
-        emb.add_field(name="", value="\n".join([f"#{i} [{v["ign"]}](https://web.simple-mmo.com/user/view/{v["smmo_id"]}): **{format(v["ett"]+v["btt"],",d")}**{f" ({format(v["ett"],",d")} ETT | {format(v["btt"],",d")} BTT)" if self.more_info else ""}" for v,i in zip(data,range(from_item + 1, until_item + 1))]))
+        emb.add_field(name="", value="\n".join([f"#{i} [{v.ign}](https://web.simple-mmo.com/user/view/{v.smmo_id}): **{format(v.ett+v.btt,",d")}**{f" ({format(v.ett,",d")} ETT | {format(v.btt,",d")} BTT)" if self.more_info else ""}" for v,i in zip(data,range(from_item + 1, until_item + 1))]))
         
         emb.set_footer(text=f"Page {self.current_page}/{(len(self.users)) // self.sep + 1}")
         return emb

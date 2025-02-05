@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 from pycord.multicog import subcommand
 
 from bot.discord.helpers import permissions, command_utils
-from bot.db import Database, Collection
+from bot.db import Database, Collection, Database2
 from bot.db.models import GameStats, User
 from bot.api import SMMOApi
 from datetime import time, datetime, timezone, timedelta
@@ -13,9 +13,9 @@ class Admin(commands.Cog):
     def __init__(self, client) -> None:
         self.config = command_utils.get_config()
         self.client = client
-        self.save_stats.start()
-        self.check_stats.start()
-        self.check_lb.start()
+        # self.save_stats.start()
+        # self.check_stats.start()
+        # self.check_lb.start()
 
     def cog_unload(self) -> None:
         self.save_stats.cancel()
@@ -23,156 +23,179 @@ class Admin(commands.Cog):
         self.check_lb.cancel()
 
     @subcommand("admin")
-    @slash_command(description="Give BTT to one user")
+    @slash_command()
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    async def gbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
-        if tmp is None:
-            return await ctx.followup.send(content="The user isn't registered.")
-        db_user:User = User(**tmp)
+    async def migrate(self, ctx: ApplicationContext) -> None:
+        config = await Database2.select(Collection.CONFIG.value)
+        users = await Database2.select(Collection.USER.value)
+        stats = await Database2.select(Collection.STATS.value)
 
-        db_user.btt += amount
+        await Database.create_table()
+        for c in config:
+            if "channel_id" in c:
+                await Database.insert_config("chid",c["channel_id"])
+            if "mult" in c:
+                await Database.insert_config("mult",1)
 
-        await Database.update_one(Collection.USER.value,db_user.as_dict(),db_user.as_dict())
-        await ctx.followup.send(content="BTT Added")
+        for u in users:
+            await Database.insert_user(u["discord_id"],u["smmo_id"],u["ign"],u["ett"],u["btt"],u["daily"],u["weekly"],u["monthly"])
+            
+        for s in stats:
+            await Database.insert_stats(s["smmo_id"],s["steps"],s["npc"],s["pvp"],datetime(s["year"],s["month"],s["day"],hour=12,minute=0,microsecond=0,tzinfo=timezone.utc))
 
+        await ctx.followup.send("DONE")
 
-    @subcommand("admin")
-    @slash_command(description="Remove BTT from one user")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    async def rbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
-        if tmp is None:
-            return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
+    # @subcommand("admin")
+    # @slash_command(description="Give BTT to one user")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def gbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+    #     tmp = await Database.select_user_discord(user.id)
+    #     if tmp is None:
+    #         return await ctx.followup.send(content="The user isn't registered.")
+    #     db_user:User = User(**tmp)
 
-        db_user.btt -= amount
+    #     db_user.btt += amount
 
-        await Database.update_one(Collection.USER.value,db_user.as_dict(),db_user.as_dict())
-        await ctx.followup.send(content="BTT Removed")
-
-
-    @subcommand("admin")
-    @slash_command(description="Give ETT to one user")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    async def gett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
-        if tmp is None:
-            return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
-
-        db_user.ett += amount
-
-        await Database.update_one(Collection.USER.value,db_user.as_dict(),db_user.as_dict())
-        await ctx.followup.send(content="ETT Added")
+    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+    #     await ctx.followup.send(content="BTT Added")
 
 
-    @subcommand("admin")
-    @slash_command(description="Remove ETT from one user")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    async def rett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
-        tmp = await Database.select_one(Collection.USER.value,{"discord_id":user.id})
-        if tmp is None:
-            return await ctx.followup.send(content="The user isn't registered.")
-        db_user = User(**tmp)
+    # @subcommand("admin")
+    # @slash_command(description="Remove BTT from one user")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def rbtt(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+    #     tmp = await Database.select_user_discord(user.id)
+    #     if tmp is None:
+    #         return await ctx.followup.send(content="The user isn't registered.")
+    #     db_user = User(**tmp)
 
-        db_user.ett -= amount
+    #     db_user.btt -= amount
 
-        await Database.update_one(Collection.USER.value,db_user.as_dict(),db_user.as_dict())
-        await ctx.followup.send(content="ETT Removed")
-
-
-    @subcommand("admin")
-    @slash_command(description="Start event")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    @discord.option(name="multipler", description="multiply the gains by x times")
-    async def start_event(self, ctx: ApplicationContext, multipler: int) -> None:
-        cfn = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
-        if cfn is not None and cfn["mult"] != 1:
-            return await ctx.followup.send("Event already on.")
-        cfn["mult"] = multipler
-        await Database.update_one(Collection.CONFIG.value,cfn,cfn)
-        await ctx.followup.send("Done")
+    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+    #     await ctx.followup.send(content="BTT Removed")
 
 
-    @subcommand("admin")
-    @slash_command(description="End event")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    async def end_event(self, ctx: ApplicationContext, multipler: int) -> None:
-        cfn = await Database.select_one(Collection.CONFIG.value,{"mult":multipler})
-        if cfn is None:
-            return await ctx.followup.send("No Events on.")
-        cfn["mult"] = 1
-        await Database.update_one(Collection.CONFIG.value,cfn,cfn)
-        await ctx.followup.send("Done")
+    # @subcommand("admin")
+    # @slash_command(description="Give ETT to one user")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def gett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+    #     tmp = await Database.select_user_discord(user.id)
+    #     if tmp is None:
+    #         return await ctx.followup.send(content="The user isn't registered.")
+    #     db_user = User(**tmp)
 
-    @subcommand("admin")
-    @slash_command(description="Select notification channel")
-    @command_utils.auto_defer()
-    @discord.guild_only()
-    @permissions.require_admin_or_staff()
-    async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel) -> None:
-        try:
-            ch = await self.client.fetch_channel(channel.id)
-            await ch.send(content="test message.", delete_after=1)
-        except discord.errors.Forbidden:
-            return await ctx.followup.send(content="Bot doesn't have the perms to see/write the channel.")
+    #     db_user.ett += amount
+
+    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+    #     await ctx.followup.send(content="ETT Added")
+
+
+    # @subcommand("admin")
+    # @slash_command(description="Remove ETT from one user")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def rett(self, ctx: ApplicationContext, user: discord.User, amount: int) -> None:
+    #     tmp = await Database.select_user_discord(user.id)
+    #     if tmp is None:
+    #         return await ctx.followup.send(content="The user isn't registered.")
+    #     db_user = User(**tmp)
+
+    #     db_user.ett -= amount
+
+    #     await Database.update_user(db_user.discord_id,db_user.ign,db_user.ett,db_user.btt,db_user.daily,db_user.weekly,db_user.monthly)
+    #     await ctx.followup.send(content="ETT Removed")
+
+
+    # @subcommand("admin")
+    # @slash_command(description="Start event")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # @discord.option(name="multipler", description="multiply the gains by x times")
+    # async def start_event(self, ctx: ApplicationContext, multipler: int) -> None:
+    #     cfn = await Database.select_config("mult")
+    #     if cfn is not None or cfn.value != 1:
+    #         return await ctx.followup.send("Event already on.")
+    #     cfn.value = multipler
+    #     await Database.update_config(cfn.name,cfn.value)
+    #     await ctx.followup.send("Done")
+
+
+    # @subcommand("admin")
+    # @slash_command(description="End event")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def end_event(self, ctx: ApplicationContext, multipler: int) -> None:
+    #     cfn = await Database.select_config("mult")
+    #     if cfn is None or cfn.value == 1:
+    #         return await ctx.followup.send("No Events on.")
+    #     cfn.value = 1
+    #     await Database.update_config(cfn.name,cfn.value)
+    #     await ctx.followup.send("Done")
+
+    # @subcommand("admin")
+    # @slash_command(description="Select notification channel")
+    # @command_utils.auto_defer()
+    # @discord.guild_only()
+    # @permissions.require_admin_or_staff()
+    # async def notification_channel(self, ctx: ApplicationContext, channel: discord.TextChannel) -> None:
+    #     try:
+    #         ch = await self.client.fetch_channel(channel.id)
+    #         await ch.send(content="test message.", delete_after=1)
+    #     except discord.errors.Forbidden:
+    #         return await ctx.followup.send(content="Bot doesn't have the perms to see/write the channel.")
         
-        await Database.insert_one(Collection.CONFIG.value, {"channel_id":channel.id})
-        await Database.insert_one(Collection.CONFIG.value, {"mult":1})
-        await ctx.followup.send("Done")
+    #     if not await Database.insert_config("chid",channel.id):
+    #         await Database.update_config("chid",channel.id)
+
+    #     await ctx.followup.send("Done")
     
     @tasks.loop(time=time(hour=12))
     async def save_stats(self):
         guild_member:list = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date:datetime = command_utils.get_in_game_day()
-        await Database.insert(Collection.STATS.value, [{"smmo_id": member.user_id,"steps": member.steps,"npc": member.npc_kills,"pvp": member.user_kills,"year": date.year,"month": date.month,"day": date.day, "time":int(date.timestamp())} for member in guild_member])
-
-        users = await Database.select(Collection.USER.value)
+        users = await Database.select_user_all()
         for member in guild_member:
+            await Database.insert_stats(member.user_id,member.steps,member.npc_kills,member.user_kills,date)
             for user in users:
-                if user["smmo_id"] != member.user_id:
+                if user.smmo_id != member.user_id:
                     continue
-                tmp_u = User(**user)
-                await Database.update_one_user_reward_status(tmp_u,"daily",False)
+                user.daily = False
                 if datetime.today().weekday() == 0:
-                    await Database.update_one_user_reward_status(tmp_u,"weekly",False)
+                    user.weekly = False
                 if datetime.today().day == 28:
-                    await Database.update_one_user_reward_status(tmp_u,"monthly",False)
+                    user.monthly = False
+                await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
 
 
     @tasks.loop(minutes=15)
     async def check_stats(self):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
-        cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
-        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        cnf = await Database.select_config("chid")
+        cnf2 = await Database.select_config("mult")
         reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
         reward:list[str] = ["daily_reward","weekly_reward","monthly_reward"]
         date = command_utils.get_in_game_day()
-        time:list[datetime] = [date,date - timedelta(days=1),date - timedelta(weeks=4)]
+        time:list[datetime] = [date,date - timedelta(days=7),date - timedelta(weeks=4)]
 
         for member in guild_member:
-            try:
-                user = User(**(await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})))
-            except TypeError:
+            user = await Database.select_user_smmoid(member.user_id)
+            if user is None:
                 continue
             reward_got:list[bool] = [user.daily,user.weekly,user.weekly]
             for i in range(3):
-                try:
-                    stats = GameStats(**(await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":time[i].year,"month":time[i].month,"day":time[i].day})))
-                except TypeError:
+                stats = await Database.select_stats(member.user_id,time[i])
+                if stats is None:
                     continue
                 if not reward_got[i] and ((int(self.config["REQUIREMENTS"][reward_names[0][i]]) != 0 and member.steps - stats.steps >= int(self.config["REQUIREMENTS"][reward_names[0][i]]))
                                         or (int(self.config["REQUIREMENTS"][reward_names[1][i]]) != 0 and member.npc_kills - stats.npc >= int(self.config["REQUIREMENTS"][reward_names[1][i]]))
@@ -184,13 +207,13 @@ class Admin(commands.Cog):
                     elif i == 2:
                         user.weekly = True
 
-                    user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2["mult"]) if cnf2 is not None else 1)
-                    await Database.update_one(Collection.USER.value,user.as_dict(),user.as_dict())
+                    user.ett += int(self.config["REWARDS"][reward[i]]) * (cnf2.value if cnf2 is not None else 1)
+                    await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
                     if cnf is not None:
                         try:
-                            channel = await self.client.fetch_channel(cnf["channel_id"])
+                            channel = await self.client.fetch_channel(cnf.value)
                             emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
-                            emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (cnf2["mult"] if cnf2 is not None else 1)} ETT")
+                            emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{user.discord_id}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (cnf2.value if cnf2 is not None else 1)} ETT")
                             await channel.send(embed=emb)
                         except discord.errors.NotFound:
                             print("Channel not found.")
@@ -277,8 +300,8 @@ class Admin(commands.Cog):
         # get guild member
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date = command_utils.get_in_game_day()
-        cnf = await Database.select_one(Collection.CONFIG.value,{"channel_id":{"$exists":True}})
-        cnf2 = await Database.select_one(Collection.CONFIG.value,{"mult":{"$exists":True}})
+        cnf = await Database.select_config("chid")
+        cnf2 = await Database.select_config("mult")
 
         lbs_npc = [[],[],[]]
         lbs_stp = [[],[],[]]
@@ -286,16 +309,14 @@ class Admin(commands.Cog):
         # for each member do some checks:
         for member in guild_member:
             # check if member is registered; if not no reward!
-            user = await Database.select_one(Collection.USER.value,{"smmo_id":member.user_id})
+            user = await Database.select_user_smmoid(member.user_id)
             if user is None:
                 continue
 
             # if member registered take daily stats
-            user = User(**user)
-            daily_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date.year,"month":date.month,"day":date.day})
+            daily_stats = await Database.select_stats(member.user_id,date)
             if daily_stats is None:
                 continue
-            daily_stats = GameStats(**daily_stats)
             lbs_npc[0].append({"user":user,"stats":member.npc_kills - daily_stats.npc})
             lbs_stp[0].append({"user":user,"stats":member.steps - daily_stats.steps})
             lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
@@ -304,7 +325,7 @@ class Admin(commands.Cog):
             if datetime.today().weekday() != 0:
                 continue
             date_temp = date - timedelta(days=1)
-            weekly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
+            weekly_stats = await Database.select_stats(member.user_id,date_temp)
             if weekly_stats is None:
                 continue
             lbs_npc[1].append({"user":user,"stats":member.npc_kills - weekly_stats.npc})
@@ -315,7 +336,7 @@ class Admin(commands.Cog):
             if datetime.today().day != 28:
                 continue
             date_temp = date - timedelta(weeks=4)
-            monthly_stats = await Database.select_one(Collection.STATS.value, {"smmo_id":member.user_id,"year":date_temp.year,"month":date_temp.month,"day":date_temp.day})
+            monthly_stats = await Database.select_stats(member.user_id,date_temp)
             if monthly_stats is None:
                 continue
             lbs_npc[2].append({"user":user,"stats":member.npc_kills - monthly_stats.npc})
@@ -346,26 +367,26 @@ class Admin(commands.Cog):
             for us,rew,index in zip(lbs_npc[i],int(self.config[names[i]]),range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[0] += "**NPC**\n"
-                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg[0] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                msg[0] += f"#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[1] += "**Steps**\n"
-                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
 
             for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                 if index == 0:
                     msg[2] += "**PVP**\n"
-                us["user"].ett += rew * (int(cnf2["mult"]) if cnf2 is not None else 1)
-                await Database.update_one(Collection.USER.value,us["user"],us["user"])
-                msg[2] += f"#{index+1} {us["user"].ign} +{rew * (cnf2["mult"] if cnf2 is not None else 1)} ETT\n"
+                us["user"].ett += rew * (cnf2.value if cnf2 is not None else 1)
+                await Database.update_user(us["user"].discord_id,us["user"].name,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                msg[2] += f"#{index+1} {us["user"].ign} +{rew * (cnf2.value if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
                 try:
-                    channel = await self.client.fetch_channel(cnf["channel_id"])
+                    channel = await self.client.fetch_channel(cnf.value)
                     emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Leaderboard reward!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
                     for i in range(3):
                         if len(msg[i]) == 0:
