@@ -78,7 +78,7 @@ class Database:
                 steps INTEGER(8),
                 npc INTEGER(8),
                 pvp INTEGER(8),
-                date DATETIME(),
+                date DATETIME,
                 PRIMARY KEY(smmo_id,date)
             );""",
 
