@@ -94,14 +94,14 @@ class Database:
     @staticmethod
     async def select_user_discord(discord_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE discord_id=%s",(discord_id,))
-        if data is not None:
+        if data is not None and len(data) != 0:
             return model.User(**data)
         return None
     
     @staticmethod
     async def select_user_smmoid(smmo_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE smmo_id=%s",(smmo_id,))
-        if data is not None:
+        if data is not None and len(data) != 0:
             return model.User(**data)
         return None
     
@@ -131,7 +131,7 @@ class Database:
     @staticmethod
     async def select_stats(smmo_id:int, datetime:datetime) -> model.GameStats | None:
         data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND datetime>=%s ORDER BY datetime DESC LIMIT 1")
-        if data is not None:
+        if data is not None and len(data) != 0:
             return model.GameStats(**data)
         return None
     
@@ -150,7 +150,7 @@ class Database:
     @staticmethod
     async def select_config(name:str) -> model.Config | None:
         data = await Database._select("SELECT * FROM config WHERE name=%s",(name,))
-        if data is not None:
+        if data is not None and len(data) != 0:
             return model.Config(**data)
         return None
 
