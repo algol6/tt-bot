@@ -23,7 +23,7 @@ class Database:
     MYSQL_USER = getenv("MYSQL_USER")
     MYSQL_PASSWORD = getenv("MYSQL_PASSWORD")
     MYSQL_DB = getenv("MYSQL_DB")
-    
+
     print("MYSQL_ROUTER_HOST", MYSQL_ROUTER_HOST)
     print("MYSQL_ROUTER_PORT", MYSQL_ROUTER_PORT)
     print("MYSQL_USER", MYSQL_USER)
@@ -75,9 +75,9 @@ class Database:
 
             """CREATE TABLE IF NOT EXISTS stats(
                 smmo_id INTEGER(10),
-                steps INTEGER(),
-                npc INTEGER(),
-                pvp INTEGER(),
+                steps INTEGER(8),
+                npc INTEGER(8),
+                pvp INTEGER(8),
                 date DATETIME(),
                 PRIMARY KEY(smmo_id,date)
             );""",
