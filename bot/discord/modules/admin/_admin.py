@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 from pycord.multicog import subcommand
 
 from bot.discord.helpers import permissions, command_utils
-from bot.db import Database, Collection, Database2
+from bot.db import Database
 from bot.db.models import GameStats, User
 from bot.api import SMMOApi
 from datetime import time, datetime, timezone, timedelta
