@@ -127,7 +127,7 @@ class Database:
 
     @staticmethod
     async def select_stats(smmo_id:int, datetime:datetime) -> model.GameStats | None:
-        data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND date>=%s ORDER BY date DESC LIMIT 1")
+        data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND date>=%s ORDER BY date DESC LIMIT 1",(smmo_id,datetime,))
         if data is not None and len(data) != 0:
             return model.GameStats(data[0][0],data[0][1],data[0][2],data[0][3],data[0][4])
         return None

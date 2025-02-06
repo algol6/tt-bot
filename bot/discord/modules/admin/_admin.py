@@ -172,6 +172,8 @@ class Admin(commands.Cog):
                 if datetime.today().day == 28:
                     user.monthly = False
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
+        date -= timedelta(weeks=5)
+        await Database.delete_stats(date)
 
 
     @tasks.loop(minutes=15)
