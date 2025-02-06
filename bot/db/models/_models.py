@@ -3,7 +3,7 @@ from datetime import datetime
 
 @dataclass
 class User:
-    discord_id:int
+    discord_id:str
     smmo_id:int
     ign:str
     ett:int
@@ -23,4 +23,4 @@ class GameStats:
 @dataclass
 class Config:
     name:str
-    value:int
+    value:str

@@ -34,8 +34,9 @@ class Database:
                                         db=Database.MYSQL_DB) as db:
                 async with await db.cursor() as cur:
                     await cur.execute(query,parameters)
-                    res = [x for x in await cur.fetchall()]
-                    return [[v for v in x] for x in res] if len(res)!=0 and type(res[0]) is tuple else res
+                    # res = [x for x in await cur.fetchall()]
+                    # return [[v for v in x] for x in res] if len(res)!=0 and type(res[0]) is tuple else res
+                    return list(await cur.fetchall())
         except Exception as e:
             print(e)
             return None
@@ -91,21 +92,21 @@ class Database:
     async def select_user_discord(discord_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE discord_id=%s",(discord_id,))
         if data is not None and len(data) != 0:
-            return model.User(*data)
+            return model.User(data[0][0],data[0][1],data[0][2],data[0][3],data[0][4],data[0][5],data[0][6],data[0][7])
         return None
     
     @staticmethod
     async def select_user_smmoid(smmo_id:int) -> model.User | None:
         data = await Database._select("SELECT * FROM user WHERE smmo_id=%s",(smmo_id,))
         if data is not None and len(data) != 0:
-            return model.User(*data)
+            return model.User(data[0][0],data[0][1],data[0][2],data[0][3],data[0][4],data[0][5],data[0][6],data[0][7])
         return None
     
     @staticmethod
     async def select_user_all() -> list[model.User]:
         data = await Database._select("SELECT * FROM user")
         if data is not None and len(data) != 0:
-            return [model.User(*v) for v in data]
+            return [model.User(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7]) for v in data]
         return []
     
     @staticmethod
@@ -126,9 +127,9 @@ class Database:
 
     @staticmethod
     async def select_stats(smmo_id:int, datetime:datetime) -> model.GameStats | None:
-        data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND datetime>=%s ORDER BY datetime DESC LIMIT 1")
+        data = await Database._select("SELECT * FROM stats WHERE smmo_id=%s AND date>=%s ORDER BY date DESC LIMIT 1")
         if data is not None and len(data) != 0:
-            return model.GameStats(**data)
+            return model.GameStats(data[0][0],data[0][1],data[0][2],data[0][3],data[0][4])
         return None
     
     @staticmethod
@@ -141,13 +142,13 @@ class Database:
 
     @staticmethod
     async def delete_stats(datetime:datetime) -> None:
-        await Database._insert("DELETE FROM stats WHERE datetime<=%s",(datetime,))
+        await Database._insert("DELETE FROM stats WHERE date<=%s",(datetime,))
 
     @staticmethod
     async def select_config(name:str) -> model.Config | None:
         data = await Database._select("SELECT * FROM config WHERE name=%s",(name,))
         if data is not None and len(data) != 0:
-            return model.Config(*data)
+            return model.Config(data[0][0],data[0][1])
         return None
 
     @staticmethod
