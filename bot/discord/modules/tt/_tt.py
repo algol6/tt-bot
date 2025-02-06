@@ -61,7 +61,7 @@ class TT(commands.Cog):
 
             if self.config["REQUIREMENTS"][reward_names[0][i]] != "0":
                 try:
-                    msg += f"**Steps**: {0 if stat is None else gm_user.steps - stat["steps"]}/{self.config["REQUIREMENTS"][reward_names[0][i]]}\n"
+                    msg += f"**Steps**: {0 if stat is None else gm_user.steps - stat.steps}/{self.config["REQUIREMENTS"][reward_names[0][i]]}\n"
                 except AttributeError:
                     pass
                 try:
@@ -72,7 +72,7 @@ class TT(commands.Cog):
                     pass
             if self.config["REQUIREMENTS"][reward_names[1][i]] != "0":
                 try:
-                    msg += f"**Npc Kills**: {0 if stat is None else gm_user.npc_kills - stat["npc"]}/{self.config["REQUIREMENTS"][reward_names[1][i]]}\n"
+                    msg += f"**Npc Kills**: {0 if stat is None else gm_user.npc_kills - stat.npc}/{self.config["REQUIREMENTS"][reward_names[1][i]]}\n"
                 except AttributeError:
                     pass
                 try:
@@ -83,7 +83,7 @@ class TT(commands.Cog):
                     pass
             if self.config["REQUIREMENTS"][reward_names[2][i]] != "0":
                 try:
-                    msg += f"**Pvp Kills**: {0 if stat is None else gm_user.user_kills - stat["pvp"]}/{self.config["REQUIREMENTS"][reward_names[2][i]]}\n"
+                    msg += f"**Pvp Kills**: {0 if stat is None else gm_user.user_kills - stat.pvp}/{self.config["REQUIREMENTS"][reward_names[2][i]]}\n"
                 except AttributeError:
                     pass
                 try:
