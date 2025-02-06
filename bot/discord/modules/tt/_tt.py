@@ -52,7 +52,9 @@ class TT(commands.Cog):
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s progress", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
         date = command_utils.get_in_game_day()
         reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
-        time:list[datetime] = [date ,date - timedelta(days=date.weekday()),date.replace(day=28) if date.day > 28 or (date.day == 28 and date.hour >= 12) else (date - timedelta(weeks=4)).replace(day=28)]
+        time:list[datetime] = [date,
+                               date - timedelta(days=date.weekday()),
+                               date.replace(day=28) if date.day > 28 or (date.day == 28 and date.hour >= 12) else (date - timedelta(weeks=4)).replace(day=28)]
 
         for i in range(3):
             msg:str = ""    
