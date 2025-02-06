@@ -9,8 +9,6 @@ from bot.discord.helpers import command_utils
 async def is_admin_or_staff(ctx: ApplicationContext) -> bool:
     # user = await Database2.select_one(Collection.USER.value, {"discord_id":ctx.author.id})
     user = await Database.select_user_discord(ctx.author.id)
-    if ctx.user.id == 652879730063966209:
-        return True
     if user is None:
         return False
     game_users = await SMMOApi.get_guild_members(int(command_utils.get_config()["DEFAULT"]["guild_id"]))
