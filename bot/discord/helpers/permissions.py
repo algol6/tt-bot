@@ -1,6 +1,6 @@
 import functools
 from discord import ApplicationContext
-from bot.db import Database, Collection
+from bot.db import Database
 from bot.api import SMMOApi
 from bot.discord.helpers import command_utils
 

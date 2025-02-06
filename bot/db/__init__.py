@@ -1,1 +1,1 @@
-from ._database import Database, Collection, Database2
+from ._database import Database
