@@ -359,29 +359,35 @@ class Admin(commands.Cog):
         ]
 
         # and finally give the reward to the top player of the day/week/month
-        names = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
+        names:list[str] = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
+        cat:list[list[str]] = [
+            ["daily_npc","weekly_npc","monthly_npc"],
+            ["daily_steps","weekly_steps","monthly_steps"],
+            ["daily_pvp","weekly_pvp","monthly_pvp"]
+            ]
         for i in range(3):
             msg:list[str] = ["","",""]
-            for us,rew,index in zip(lbs_npc[i],self.config[names[i]],range(len(self.config[names[i]]))):
-                if index == 0:
-                    msg[0] += "**NPC**\n"
-                us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
-                await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[0] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-
-            for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
-                if index == 0:
-                    msg[1] += "**Steps**\n"
-                us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
-                await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[1] += f"Step\n#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-
-            for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
-                if index == 0:
-                    msg[2] += "**PVP**\n"
-                us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
-                await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                msg[2] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+            if int(self.config[cat[0][i]]) != 0:
+                for us,rew,index in zip(lbs_npc[i],self.config[names[i]],range(len(self.config[names[i]]))):
+                    if index == 0:
+                        msg[0] += "**NPC**\n"
+                    us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
+                    await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                    msg[0] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+            if int(self.config[cat[1][i]]) != 0:
+                for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
+                    if index == 0:
+                        msg[1] += "**Steps**\n"
+                    us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
+                    await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                    msg[1] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+            if int(self.config[cat[2][i]]) != 0:
+                for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
+                    if index == 0:
+                        msg[2] += "**PVP**\n"
+                    us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
+                    await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
+                    msg[2] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
                 try:
                     channel = await self.client.fetch_channel(int(cnf.value))
@@ -389,7 +395,7 @@ class Admin(commands.Cog):
                     for i in range(3):
                         if len(msg[i]) == 0:
                             continue
-                        emb.add_field(name="", value=msg[i])
+                        emb.add_field(name="", value=msg[i],inline=False)
                     await channel.send(embed=emb)
                 except discord.errors.NotFound:
                     print("Channel not found.")
