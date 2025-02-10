@@ -7,6 +7,7 @@ from bot.discord.helpers import permissions, command_utils
 from bot.db import Database
 from bot.db.models import GameStats, User
 from bot.api import SMMOApi
+from bot.api.model import GuildMemberInfo
 from datetime import time, datetime, timezone, timedelta
 
 class Admin(commands.Cog):
@@ -158,7 +159,9 @@ class Admin(commands.Cog):
     
     @tasks.loop(time=time(hour=12))
     async def save_stats(self):
-        guild_member:list = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
+        self.check_stats.cancel()
+        self.check_lb.cancel()
+        guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date:datetime = command_utils.get_in_game_day()
         users = await Database.select_user_all()
         for member in guild_member:
@@ -174,6 +177,8 @@ class Admin(commands.Cog):
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
         await Database.delete_stats(date)
+        self.check_stats.start()
+        self.check_lb.start()
 
 
     @tasks.loop(minutes=15)
@@ -208,6 +213,8 @@ class Admin(commands.Cog):
                     user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
                     if cnf is not None:
+                        if int(self.config["REWARDS"][reward[i]]) == 0:
+                            continue
                         try:
                             channel = await self.client.fetch_channel(int(cnf.value))
                             emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
@@ -367,21 +374,21 @@ class Admin(commands.Cog):
             ]
         for i in range(3):
             msg:list[str] = ["","",""]
-            if int(self.config[cat[0][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
                 for us,rew,index in zip(lbs_npc[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[0] += "**NPC**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
                     msg[0] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-            if int(self.config[cat[1][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
                 for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[1] += "**Steps**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
                     msg[1] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-            if int(self.config[cat[2][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
                 for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[2] += "**PVP**\n"
