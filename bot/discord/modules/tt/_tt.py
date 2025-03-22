@@ -49,6 +49,8 @@ class TT(commands.Cog):
             return await ctx.followup.send(content="User not registered.")
 
         gm_user = await SMMOApi.get_player_info(db_user.smmo_id)
+        if gm_user is None:
+            return await ctx.followup.send(content="Error with the server")
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s progress", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
         date = command_utils.get_in_game_day()
         reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
@@ -60,7 +62,8 @@ class TT(commands.Cog):
             msg:str = ""    
             perc:int = 0
             stat = await Database.select_stats(db_user.smmo_id,time[i])
-            
+            if stat is None:
+                return await ctx.followup.send(content="No data")
             if self.config["REQUIREMENTS"][reward_names[0][i]] != "0":
                 try:
                     msg += f"**Steps**: {0 if stat is None else gm_user.steps - stat.steps}/{self.config["REQUIREMENTS"][reward_names[0][i]]}\n"
@@ -123,7 +126,7 @@ class TT(commands.Cog):
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    async def remove(self, ctx: ApplicationContext, smmo_id:int, user) -> None:
+    async def remove(self, ctx: ApplicationContext, smmo_id:int) -> None:
         game_user = await SMMOApi.get_player_info(smmo_id)
         if game_user is None:
             return await ctx.followup.send(content="SMMO ID not found")
