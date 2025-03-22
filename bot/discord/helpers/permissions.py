@@ -12,6 +12,8 @@ async def is_admin_or_staff(ctx: ApplicationContext) -> bool:
     if user is None:
         return False
     game_users = await SMMOApi.get_guild_members(int(command_utils.get_config()["DEFAULT"]["guild_id"]))
+    if game_users is None:
+        return False
     return any(user.smmo_id == x.user_id and x.position != "Member" for x in game_users)
 
 def require_admin_or_staff():

@@ -45,7 +45,7 @@ class TT(commands.Cog):
             user = ctx.user
 
         db_user = await Database.select_user_discord(user.id)
-        if user is None:
+        if db_user is None:
             return await ctx.followup.send(content="User not registered.")
 
         gm_user = await SMMOApi.get_player_info(db_user.smmo_id)
@@ -60,7 +60,7 @@ class TT(commands.Cog):
             msg:str = ""    
             perc:int = 0
             stat = await Database.select_stats(db_user.smmo_id,time[i])
-
+            
             if self.config["REQUIREMENTS"][reward_names[0][i]] != "0":
                 try:
                     msg += f"**Steps**: {0 if stat is None else gm_user.steps - stat.steps}/{self.config["REQUIREMENTS"][reward_names[0][i]]}\n"
