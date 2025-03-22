@@ -123,7 +123,7 @@ class TT(commands.Cog):
     @command_utils.auto_defer()
     @discord.guild_only()
     @permissions.require_admin_or_staff()
-    async def remove(self, ctx: ApplicationContext, smmo_id:int) -> None:
+    async def remove(self, ctx: ApplicationContext, smmo_id:int, user) -> None:
         game_user = await SMMOApi.get_player_info(smmo_id)
         if game_user is None:
             return await ctx.followup.send(content="SMMO ID not found")
