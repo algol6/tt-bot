@@ -47,8 +47,9 @@ class TT(commands.Cog):
         db_user = await Database.select_user_discord(user.id)
         if db_user is None:
             return await ctx.followup.send(content="User not registered.")
-
+        print("DB User:",db_user)
         gm_user = await SMMOApi.get_player_info(db_user.smmo_id)
+        print("IG User:", gm_user)
         if gm_user is None:
             return await ctx.followup.send(content="Error with the server")
         emb:discord.Embed = discord.Embed(title=f"{db_user.ign}'s progress", description=f"*Last Update*: <t:{int(datetime.now().timestamp())}:R>",color=int(self.config["DEFAULT"]["color"],16))
