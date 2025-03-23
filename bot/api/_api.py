@@ -79,7 +79,6 @@ class SMMOApi:
     @staticmethod
     async def get_player_info(player_id: str) -> model.PlayerInfo | None:
         resp = await SMMOApi._request(f"v1/player/info/{player_id}")
-        print(resp)
         if resp is not None:
             return model.PlayerInfo(**resp)
 
