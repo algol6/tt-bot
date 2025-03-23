@@ -157,7 +157,7 @@ class Admin(commands.Cog):
 
         await ctx.followup.send("Done")
     
-    @tasks.loop(time=time(hour=12))
+    @tasks.loop(hours=1)
     async def save_stats(self):
         self.check_stats.cancel()
         self.check_lb.cancel()
@@ -165,7 +165,8 @@ class Admin(commands.Cog):
         date:datetime = command_utils.get_in_game_day()
         users = await Database.select_user_all()
         for member in guild_member:
-            await Database.insert_stats(member.user_id,member.steps,member.npc_kills,member.user_kills,date)
+            if not await Database.insert_stats(member.user_id,member.steps,member.npc_kills,member.user_kills,date):
+                continue
             for user in users:
                 if user.smmo_id != member.user_id:
                     continue
