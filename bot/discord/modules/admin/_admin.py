@@ -17,11 +17,14 @@ class Admin(commands.Cog):
         self.save_stats.start()
         self.check_stats.start()
         self.check_lb.start()
+        self.save_stats_reset.start()
 
     def cog_unload(self) -> None:
         self.save_stats.cancel()
         self.check_stats.cancel()
         self.check_lb.cancel()
+        self.save_stats_reset.cancel()
+
 
     # @subcommand("admin")
     # @slash_command()
@@ -157,6 +160,30 @@ class Admin(commands.Cog):
 
         await ctx.followup.send("Done")
     
+    @tasks.loop(time=time(hour=12))
+    async def save_stats_reset(self):
+        self.check_stats.cancel()
+        self.check_lb.cancel()
+        guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
+        date:datetime = command_utils.get_in_game_day()
+        users = await Database.select_user_all()
+        for member in guild_member:
+            if not await Database.insert_stats(member.user_id,member.steps,member.npc_kills,member.user_kills,date):
+                continue
+            for user in users:
+                if user.smmo_id != member.user_id:
+                    continue
+                user.daily = False
+                if datetime.today().weekday() == 0:
+                    user.weekly = False
+                if datetime.today().day == 28:
+                    user.monthly = False
+                await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
+        date -= timedelta(weeks=5)
+        await Database.delete_stats(date)
+        self.check_stats.start()
+        self.check_lb.start()
+
     @tasks.loop(hours=1)
     async def save_stats(self):
         self.check_stats.cancel()
