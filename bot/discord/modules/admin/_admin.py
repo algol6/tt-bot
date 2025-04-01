@@ -5,7 +5,7 @@ from pycord.multicog import subcommand
 
 from bot.discord.helpers import permissions, command_utils
 from bot.db import Database
-from bot.db.models import GameStats, User
+from bot.db.models import GameStats, User, Log
 from bot.api import SMMOApi
 from bot.api.model import GuildMemberInfo
 from datetime import time, datetime, timezone, timedelta
@@ -50,6 +50,17 @@ class Admin(commands.Cog):
     #         await Database.insert_stats(s["smmo_id"],s["steps"],s["npc"],s["pvp"],datetime(s["year"],s["month"],s["day"],hour=12,minute=0,microsecond=0,tzinfo=timezone.utc))
 
     #     await ctx.followup.send("DONE")
+    @subcommand("admin")
+    @slash_command(description="Bot Errors log")
+    @command_utils.auto_defer()
+    @discord.guild_only()
+    @permissions.require_admin_or_staff()
+    async def log(self, ctx: ApplicationContext) -> None:
+        log:list[Log] = await Database.select_log()
+        if len(log)==0:
+            return await ctx.followup.send(content="No entries in the log")
+        await ctx.followup.send(content="\n".join(f"[{v.date}] {v.log}" for v in log))
+
 
     @subcommand("admin")
     @slash_command(description="Give BTT to one user")

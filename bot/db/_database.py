@@ -75,10 +75,35 @@ class Database:
                 name CHAR(4) PRIMARY KEY,
                 value CHAR(20)
             );""",
+
+            """CREATE TABLE IF NOT EXISTS log(
+                id INTEGER NOT NULL AUTO_INCREMENT,
+                log TEXT,
+                date DATETIME,
+                PRIMARY KEY(id)
+            );"""
         ]
 
         for statement in sql_statements:
             await Database._insert(statement)
+
+    @staticmethod
+    async def select_log() -> list[model.Log]:
+        data = await Database._select("SELECT * FROM log")
+        if data is not None and len(data)!=0:
+            return [model.Log(v[0],v[1],v[2]) for v in data]
+        return []
+    
+    @staticmethod
+    async def insert_log(message:str,date:datetime) -> bool:
+        try:
+            await Database._insert("INSERT INTO log VALUES(%s,%s)",(message,date))
+            return True
+        except IntegrityError:
+            return False
+        
+    async def delete_log(date:datetime) -> None:
+        await Database._insert("DELETE FROM log WHERE date<=%s",(date,))
 
     @staticmethod
     async def select_user_discord(discord_id:int) -> model.User | None:

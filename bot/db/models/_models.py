@@ -24,3 +24,9 @@ class GameStats:
 class Config:
     name:str
     value:str
+
+@dataclass
+class Log:
+    id: int
+    log: str
+    date: datetime
