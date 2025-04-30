@@ -225,7 +225,11 @@ class Admin(commands.Cog):
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         cnf = await Database.select_config("chid")
         cnf2 = await Database.select_config("mult")
-        reward_names:list[list[str]] = [["daily_steps","weekly_steps","monthly_steps"],["daily_npc","weekly_npc","monthly_npc"],["daily_pvp","weekly_pvp","monthly_pvp"]]
+        reward_names:list[list[str]] = [
+            ["daily_steps","weekly_steps","monthly_steps"],
+            ["daily_npc","weekly_npc","monthly_npc"],
+            ["daily_pvp","weekly_pvp","monthly_pvp"]
+            ]
         reward:list[str] = ["daily_reward","weekly_reward","monthly_reward"]
         date = command_utils.get_in_game_day()
         time:list[datetime] = [date,date - timedelta(days=7),date - timedelta(weeks=4)]
@@ -247,7 +251,7 @@ class Admin(commands.Cog):
                     elif i == 1:
                         user.weekly = True
                     elif i == 2:
-                        user.weekly = True
+                        user.monthly = True
 
                     user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
@@ -259,10 +263,10 @@ class Admin(commands.Cog):
                             emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
                             emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{int(user.discord_id)}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)} ETT")
                             await channel.send(embed=emb)
-                        except discord.errors.NotFound:
-                            print("Channel not found.")
-                        except discord.errors.Forbidden:
-                            print("Can't see/write on the channel")
+                        except Exception as e:
+                            await Database.insert_log(e,datetime.now())
+
+
                             
         # guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         # date = command_utils.get_in_game_day()
@@ -366,26 +370,22 @@ class Admin(commands.Cog):
             lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
 
             # if not monday do not check for weekly rewards
-            if datetime.today().weekday() != 0:
-                continue
-            date_temp = date - timedelta(days=1)
-            weekly_stats = await Database.select_stats(member.user_id,date_temp)
-            if weekly_stats is None:
-                continue
-            lbs_npc[1].append({"user":user,"stats":member.npc_kills - weekly_stats.npc})
-            lbs_stp[1].append({"user":user,"stats":member.steps - weekly_stats.steps})
-            lbs_pvp[1].append({"user":user,"stats":member.user_kills - weekly_stats.pvp})
-            
+            if datetime.today().weekday() == 0:
+                date_temp = date - timedelta(days=1)
+                weekly_stats = await Database.select_stats(member.user_id,date_temp)
+                if weekly_stats is not None:
+                    lbs_npc[1].append({"user":user,"stats":member.npc_kills - weekly_stats.npc})
+                    lbs_stp[1].append({"user":user,"stats":member.steps - weekly_stats.steps})
+                    lbs_pvp[1].append({"user":user,"stats":member.user_kills - weekly_stats.pvp})
+                
             # if not on server reset (28th) do not check for monthly reward
-            if datetime.today().day != 28:
-                continue
-            date_temp = date - timedelta(weeks=4)
-            monthly_stats = await Database.select_stats(member.user_id,date_temp)
-            if monthly_stats is None:
-                continue
-            lbs_npc[2].append({"user":user,"stats":member.npc_kills - monthly_stats.npc})
-            lbs_stp[2].append({"user":user,"stats":member.steps - monthly_stats.steps})
-            lbs_pvp[2].append({"user":user,"stats":member.user_kills - monthly_stats.pvp})
+            if datetime.today().day == 28:
+                date_temp = date - timedelta(weeks=4)
+                monthly_stats = await Database.select_stats(member.user_id,date_temp)
+                if monthly_stats is not None:
+                    lbs_npc[2].append({"user":user,"stats":member.npc_kills - monthly_stats.npc})
+                    lbs_stp[2].append({"user":user,"stats":member.steps - monthly_stats.steps})
+                    lbs_pvp[2].append({"user":user,"stats":member.user_kills - monthly_stats.pvp})
         
         # do a lb for each category/timeframe
         lbs_npc = [
@@ -443,10 +443,8 @@ class Admin(commands.Cog):
                             continue
                         emb.add_field(name="", value=msg[i],inline=False)
                     await channel.send(embed=emb)
-                except discord.errors.NotFound:
-                    print("Channel not found.")
-                except discord.errors.Forbidden:
-                    print("Can't see/write on the channel")
+                except Exception as e:
+                            await Database.insert_log(e,datetime.now())
 
 def setup(client: discord.Bot):
     client.add_cog(Admin(client))
