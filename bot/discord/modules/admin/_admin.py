@@ -363,11 +363,10 @@ class Admin(commands.Cog):
 
             # if member registered take daily stats
             daily_stats = await Database.select_stats(member.user_id,date)
-            if daily_stats is None:
-                continue
-            lbs_npc[0].append({"user":user,"stats":member.npc_kills - daily_stats.npc})
-            lbs_stp[0].append({"user":user,"stats":member.steps - daily_stats.steps})
-            lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
+            if daily_stats is not None:
+                lbs_npc[0].append({"user":user,"stats":member.npc_kills - daily_stats.npc})
+                lbs_stp[0].append({"user":user,"stats":member.steps - daily_stats.steps})
+                lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
 
             # if not monday do not check for weekly rewards
             if datetime.today().weekday() == 0:
@@ -406,28 +405,28 @@ class Admin(commands.Cog):
 
         # and finally give the reward to the top player of the day/week/month
         names:list[str] = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
-        cat:list[list[str]] = [
+        category:list[list[str]] = [
             ["daily_npc","weekly_npc","monthly_npc"],
             ["daily_steps","weekly_steps","monthly_steps"],
             ["daily_pvp","weekly_pvp","monthly_pvp"]
             ]
         for i in range(3):
             msg:list[str] = ["","",""]
-            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][category[0][i]]) != 0:
                 for us,rew,index in zip(lbs_npc[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[0] += "**NPC**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
                     msg[0] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][category[1][i]]) != 0:
                 for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[1] += "**Steps**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
                     msg[1] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
-            if int(self.config["REQUIREMENTS"][cat[0][i]]) != 0:
+            if int(self.config["REQUIREMENTS"][category[2][i]]) != 0:
                 for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[2] += "**PVP**\n"
