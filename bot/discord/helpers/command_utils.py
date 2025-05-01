@@ -10,7 +10,6 @@ def auto_defer(ephemeral: bool = True):
             if len(args) >= 2 and isinstance(args[1], ApplicationContext):
                 ctx: ApplicationContext = args[1]
                 await ctx.defer(ephemeral=ephemeral)
-
             return await func(*args, **kwargs)
         return wrapped
     return wrapper
