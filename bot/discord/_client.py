@@ -22,6 +22,5 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: d
 
 def run() -> None:
     import asyncio
-
     asyncio.run(Database.create_table())
     client.run(getenv("DISCORD_TOKEN"))
