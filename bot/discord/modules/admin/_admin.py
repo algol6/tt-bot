@@ -235,13 +235,13 @@ class Admin(commands.Cog):
         time:list[datetime] = [date,date - timedelta(days=7),date - timedelta(weeks=4)]
 
         for member in guild_member:
-            if int(self.config["REWARDS"][reward[i]]) == 0:
-                            continue
             user = await Database.select_user_smmoid(member.user_id)
             if user is None:
                 continue
             reward_got:list[bool] = [user.daily,user.weekly,user.monthly]
             for i in range(3):
+                if int(self.config["REWARDS"][reward[i]]) == 0:
+                                continue
                 stats = await Database.select_stats(member.user_id,time[i])
                 if stats is None:
                     continue
