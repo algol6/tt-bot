@@ -235,10 +235,12 @@ class Admin(commands.Cog):
         time:list[datetime] = [date,date - timedelta(days=7),date - timedelta(weeks=4)]
 
         for member in guild_member:
+            if int(self.config["REWARDS"][reward[i]]) == 0:
+                            continue
             user = await Database.select_user_smmoid(member.user_id)
             if user is None:
                 continue
-            reward_got:list[bool] = [user.daily,user.weekly,user.weekly]
+            reward_got:list[bool] = [user.daily,user.weekly,user.monthly]
             for i in range(3):
                 stats = await Database.select_stats(member.user_id,time[i])
                 if stats is None:
@@ -256,8 +258,6 @@ class Admin(commands.Cog):
                     user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
                     if cnf is not None:
-                        if int(self.config["REWARDS"][reward[i]]) == 0:
-                            continue
                         try:
                             channel = await self.client.fetch_channel(int(cnf.value))
                             emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Quota Reached!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
@@ -435,12 +435,12 @@ class Admin(commands.Cog):
                     msg[2] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             if cnf is not None:
                 try:
-                    channel = await self.client.fetch_channel(int(cnf.value))
                     emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Leaderboard reward!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
                     for i in range(3):
                         if len(msg[i]) == 0:
                             continue
                         emb.add_field(name="", value=msg[i],inline=False)
+                    channel = await self.client.fetch_channel(int(cnf.value))
                     await channel.send(embed=emb)
                 except Exception as e:
                             await Database.insert_log(e,datetime.now())
