@@ -9,6 +9,7 @@ from bot.db.models import GameStats, User, Log
 from bot.api import SMMOApi
 from bot.api.model import GuildMemberInfo
 from datetime import time, datetime, timezone, timedelta
+import asyncio
 
 class Admin(commands.Cog):
     def __init__(self, client) -> None:
@@ -185,9 +186,9 @@ class Admin(commands.Cog):
                 if user.smmo_id != member.user_id:
                     continue
                 user.daily = False
-                if datetime.today().weekday() == 0:
+                if datetime.today(tz=timezone.utc).weekday() == 0:
                     user.weekly = False
-                if datetime.today().day == 28:
+                if datetime.today(tz=timezone.utc).day == 28:
                     user.monthly = False
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
@@ -199,6 +200,8 @@ class Admin(commands.Cog):
     async def save_stats(self):
         self.check_stats.cancel()
         self.check_lb.cancel()
+        if self.save_stats_reset.is_running():
+            asyncio.wait([self.save_stats_reset.get_task()])
         guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date:datetime = command_utils.get_in_game_day()
         users = await Database.select_user_all()
@@ -209,9 +212,9 @@ class Admin(commands.Cog):
                 if user.smmo_id != member.user_id:
                     continue
                 user.daily = False
-                if datetime.today().weekday() == 0:
+                if datetime.today(tz=timezone.utc).weekday() == 0:
                     user.weekly = False
-                if datetime.today().day == 28:
+                if datetime.today(tz=timezone.utc).day == 28:
                     user.monthly = False
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
@@ -248,15 +251,10 @@ class Admin(commands.Cog):
                 if not reward_got[i] and ((int(self.config["REQUIREMENTS"][reward_names[0][i]]) != 0 and member.steps - stats.steps >= int(self.config["REQUIREMENTS"][reward_names[0][i]]))
                                         or (int(self.config["REQUIREMENTS"][reward_names[1][i]]) != 0 and member.npc_kills - stats.npc >= int(self.config["REQUIREMENTS"][reward_names[1][i]]))
                                         or (int(self.config["REQUIREMENTS"][reward_names[2][i]]) != 0 and member.user_kills - stats.pvp >= int(self.config["REQUIREMENTS"][reward_names[2][i]]))):
-                    if i == 0:
-                        user.daily = True
-                    elif i == 1:
-                        user.weekly = True
-                    elif i == 2:
-                        user.monthly = True
+                    reward_got[i] = True
 
                     user.ett += int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)
-                    await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
+                    await Database.update_user(user.discord_id,member.name,user.ett,user.btt,reward_got[0],reward_got[1],reward_got[2])
                     if cnf is not None:
                         try:
                             channel = await self.client.fetch_channel(int(cnf.value))
@@ -264,7 +262,7 @@ class Admin(commands.Cog):
                             emb.add_field(name=f"Congratulation You Did It! :sparkles:", value=f"<@{int(user.discord_id)}> did it! your efforts are rewarded. +{int(self.config["REWARDS"][reward[i]]) * (int(cnf2.value) if cnf2 is not None else 1)} ETT")
                             await channel.send(embed=emb)
                         except Exception as e:
-                            await Database.insert_log(e,datetime.now())
+                            await Database.insert_log(e,datetime.now(tz=timezone.utc))
 
 
                             
@@ -354,6 +352,7 @@ class Admin(commands.Cog):
         lbs_npc = [[],[],[]]
         lbs_stp = [[],[],[]]
         lbs_pvp = [[],[],[]]
+        print("Setting up LB... Done")
         # for each member do some checks:
         for member in guild_member:
             # check if member is registered; if not no reward!
@@ -369,7 +368,7 @@ class Admin(commands.Cog):
                 lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
 
             # if not monday do not check for weekly rewards
-            if datetime.today().weekday() == 0:
+            if datetime.today(tz=timezone.utc).weekday() == 0:
                 date_temp = date - timedelta(days=1)
                 weekly_stats = await Database.select_stats(member.user_id,date_temp)
                 if weekly_stats is not None:
@@ -378,13 +377,14 @@ class Admin(commands.Cog):
                     lbs_pvp[1].append({"user":user,"stats":member.user_kills - weekly_stats.pvp})
                 
             # if not on server reset (28th) do not check for monthly reward
-            if datetime.today().day == 28:
+            if datetime.today(tz=timezone.utc).day == 28:
                 date_temp = date - timedelta(weeks=4)
                 monthly_stats = await Database.select_stats(member.user_id,date_temp)
                 if monthly_stats is not None:
                     lbs_npc[2].append({"user":user,"stats":member.npc_kills - monthly_stats.npc})
                     lbs_stp[2].append({"user":user,"stats":member.steps - monthly_stats.steps})
                     lbs_pvp[2].append({"user":user,"stats":member.user_kills - monthly_stats.pvp})
+        print("Getting Member Stats... Done")
         
         # do a lb for each category/timeframe
         lbs_npc = [
@@ -402,6 +402,7 @@ class Admin(commands.Cog):
             sorted(lbs_pvp[1], key=lambda item: -item["stats"]),
             sorted(lbs_pvp[2], key=lambda item: -item["stats"])
         ]
+        print("Ordering Stats... Done")
 
         # and finally give the reward to the top player of the day/week/month
         names:list[str] = ["LEADERBOARD.daily","LEADERBOARD.weekly","LEADERBOARD.monthly"]
@@ -433,17 +434,23 @@ class Admin(commands.Cog):
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
                     msg[2] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+            print("Creating Message to send... Done")
             if cnf is not None:
                 try:
                     emb:discord.Embed = discord.Embed(title=f"{["Daily","Weekly","Monthly"][i]} Leaderboard reward!! :tada:",color=int(self.config["DEFAULT"]["color"],16))
+                    print("Setting Up The message...")
                     for i in range(3):
+                        print(f"Lenght message {i}: {len(msg[i])}")
                         if len(msg[i]) == 0:
                             continue
-                        emb.add_field(name="", value=msg[i],inline=False)
+                        emb.add_field(name="",value=msg[i],inline=False)
                     channel = await self.client.fetch_channel(int(cnf.value))
                     await channel.send(embed=emb)
+                    print("Message sent")
                 except Exception as e:
-                            await Database.insert_log(e,datetime.now())
+                            await Database.insert_log(e,datetime.now(tz=timezone.utc))
+            else:
+                print("Error: Channel id not found")
 
 def setup(client: discord.Bot):
     client.add_cog(Admin(client))
