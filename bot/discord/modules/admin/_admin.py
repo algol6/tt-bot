@@ -174,8 +174,6 @@ class Admin(commands.Cog):
     
     @tasks.loop(time=time(hour=12))
     async def save_stats_reset(self):
-        self.check_stats.cancel()
-        self.check_lb.cancel()
         guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date:datetime = command_utils.get_in_game_day()
         users = await Database.select_user_all()
@@ -193,13 +191,9 @@ class Admin(commands.Cog):
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
         await Database.delete_stats(date)
-        self.check_stats.start()
-        self.check_lb.start()
 
     @tasks.loop(hours=1)
     async def save_stats(self):
-        self.check_stats.cancel()
-        self.check_lb.cancel()
         # if self.save_stats_reset.is_running():
         #     asyncio.wait([self.save_stats_reset.get_task()])
         guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
@@ -219,8 +213,6 @@ class Admin(commands.Cog):
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
         await Database.delete_stats(date)
-        self.check_stats.start()
-        self.check_lb.start()
 
 
     @tasks.loop(minutes=15)
@@ -341,7 +333,7 @@ class Admin(commands.Cog):
         #             except discord.errors.Forbidden:
         #                 print("Can't see/write on the channel")
 
-    @tasks.loop(time=time(hour=12))
+    @tasks.loop(time=time(hour=11,minute=55))
     async def check_lb(self):
         # get guild member
         guild_member = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
