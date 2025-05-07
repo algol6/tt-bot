@@ -185,9 +185,9 @@ class Admin(commands.Cog):
                 if user.smmo_id != member.user_id:
                     continue
                 user.daily = False
-                if datetime.today(tz=timezone.utc).weekday() == 0:
+                if datetime.today().weekday() == 0:
                     user.weekly = False
-                if datetime.today(tz=timezone.utc).day == 28:
+                if datetime.today().day == 28:
                     user.monthly = False
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
@@ -209,9 +209,9 @@ class Admin(commands.Cog):
                 if user.smmo_id != member.user_id:
                     continue
                 user.daily = False
-                if datetime.today(tz=timezone.utc).weekday() == 0:
+                if datetime.today().weekday() == 0:
                     user.weekly = False
-                if datetime.today(tz=timezone.utc).day == 28:
+                if datetime.today().day == 28:
                     user.monthly = False
                 await Database.update_user(user.discord_id,member.name,user.ett,user.btt,user.daily,user.weekly,user.monthly)
         date -= timedelta(weeks=5)
