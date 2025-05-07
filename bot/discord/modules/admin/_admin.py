@@ -200,8 +200,8 @@ class Admin(commands.Cog):
     async def save_stats(self):
         self.check_stats.cancel()
         self.check_lb.cancel()
-        if self.save_stats_reset.is_running():
-            asyncio.wait([self.save_stats_reset.get_task()])
+        # if self.save_stats_reset.is_running():
+        #     asyncio.wait([self.save_stats_reset.get_task()])
         guild_member:list[GuildMemberInfo] = await SMMOApi.get_guild_members(int(self.config["DEFAULT"]["guild_id"]))
         date:datetime = command_utils.get_in_game_day()
         users = await Database.select_user_all()
