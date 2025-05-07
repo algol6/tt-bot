@@ -411,21 +411,21 @@ class Admin(commands.Cog):
                         msg[0] += "**NPC**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                    msg[0] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+                    msg[0] += f"#{index+1} {us["user"].ign} <@{int(us["user"].discord_id)}> +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             if int(self.config["REQUIREMENTS"][category[1][i]]) != 0:
                 for us,rew,index in zip(lbs_stp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[1] += "**Steps**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                    msg[1] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+                    msg[1] += f"#{index+1} {us["user"].ign} <@{int(us["user"].discord_id)}> +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             if int(self.config["REQUIREMENTS"][category[2][i]]) != 0:
                 for us,rew,index in zip(lbs_pvp[i],self.config[names[i]],range(len(self.config[names[i]]))):
                     if index == 0:
                         msg[2] += "**PVP**\n"
                     us["user"].ett += int(rew) * (int(cnf2.value) if cnf2 is not None else 1)
                     await Database.update_user(us["user"].discord_id,us["user"].ign,us["user"].ett,us["user"].btt,us["user"].daily,us["user"].weekly,us["user"].monthly)
-                    msg[2] += f"#{index+1} {us["user"].ign} +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
+                    msg[2] += f"#{index+1} {us["user"].ign} <@{int(us["user"].discord_id)}> +{int(rew) * (int(cnf2.value) if cnf2 is not None else 1)} ETT\n"
             print("Creating Message to send... Done")
             if cnf is not None:
                 try:
