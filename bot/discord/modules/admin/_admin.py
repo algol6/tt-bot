@@ -364,7 +364,7 @@ class Admin(commands.Cog):
                 lbs_pvp[0].append({"user":user,"stats":member.user_kills - daily_stats.pvp})
 
             # if not monday do not check for weekly rewards
-            if datetime.today(tz=timezone.utc).weekday() == 0:
+            if datetime.today().weekday() == 0:
                 date_temp = date - timedelta(days=1)
                 weekly_stats = await Database.select_stats(member.user_id,date_temp)
                 if weekly_stats is not None:
@@ -373,7 +373,7 @@ class Admin(commands.Cog):
                     lbs_pvp[1].append({"user":user,"stats":member.user_kills - weekly_stats.pvp})
                 
             # if not on server reset (28th) do not check for monthly reward
-            if datetime.today(tz=timezone.utc).day == 28:
+            if datetime.today().day == 28:
                 date_temp = date - timedelta(weeks=4)
                 monthly_stats = await Database.select_stats(member.user_id,date_temp)
                 if monthly_stats is not None:
